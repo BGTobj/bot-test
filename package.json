@@ -1,0 +1,21 @@
+{
+  "name": "apt_bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@emailjs/nodejs": "^2.2.0",
+    "dotenv": "^16.4.5",
+    "google-auth-library": "^9.6.3",
+    "google-spreadsheet": "^4.1.1",
+    "nodemon": "^3.0.3",
+    "telegraf": "^4.15.3"
+  }
+}
