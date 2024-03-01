@@ -56,7 +56,9 @@ const sendReview = async () => {
     ])
     .oneTime()
     .resize()
-    
+    bot.hears('В главное меню', async ctx => {
+        ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+    })
     bot.hears('Оставить отзыв', async ctx => {
         await ctx.reply(`Выберите нужное`, buttons)
         console.log(buttons)
