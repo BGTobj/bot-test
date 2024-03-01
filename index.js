@@ -3,7 +3,7 @@ const { message } = require('telegraf/filters')
 require('dotenv').config()
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
-const bot = new Telegraf('6546876939:AAHoYRs_HQMuIJgj1wuPp5fHaD-sQAjw1ww')
+const bot = new Telegraf(process.env.BOT_TOKEN)
 const creds = require('./credentials.json');
 const { keyboard } = require('telegraf/typings/markup');
 const SCOPES = [
@@ -17,7 +17,7 @@ const serviceAccountAuth = new JWT({
   });
 
 
-const doc = new GoogleSpreadsheet('1hNnKGQlczZ_yWmUMOvaD2V7DHUCAKxiksZfUpO4-2mc', serviceAccountAuth);
+const doc = new GoogleSpreadsheet(process.env.SPREADSHEETID, serviceAccountAuth);
 
 const getInfo = async () => {
     await doc.loadInfo();
