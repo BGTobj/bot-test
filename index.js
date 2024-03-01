@@ -16,7 +16,6 @@ const serviceAccountAuth = new JWT({
     scopes: SCOPES,
   });
 
-
 const doc = new GoogleSpreadsheet(process.env.SPREADSHEETID, serviceAccountAuth);
 
 const getInfo = async () => {
@@ -48,10 +47,6 @@ bot.start(async (ctx) => {
     const userFirstName = ctx.message.chat.first_name;
     await ctx.reply(`Welcome, ${userFirstName}`, mainMenu)
 });
-
-
-
-
 
 const sendReview = async () => {
     const buttons = Markup.keyboard([
@@ -96,8 +91,6 @@ const sendReview = async () => {
 
 }
 
-
-
 /* let transporter = nodemailer.createTransport({
     host: 'smtp.mail.ru',
     port: 587,
@@ -133,7 +126,6 @@ bot.hears('Задать вопрос', async ctx => {
             )
         ) 
 })
-
 
 const cities = Markup
         .keyboard([
@@ -267,17 +259,8 @@ bot.on(message('text'), async ctx => {
             await ctx.reply(`Сейчас нет действующих акций`);
         } */
     }
-    
-    
-    
-    
-    
-    
-    
         
 })
-
-
 
 bot.launch()
 
