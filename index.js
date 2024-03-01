@@ -3,7 +3,7 @@ const { message } = require('telegraf/filters')
 require('dotenv').config()
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
-const bot = new Telegraf('6546876939:AAHoYRs_HQMuIJgj1wuPp5fHaD-sQAjw1ww')
+const bot = new Telegraf(process.env.BOT_TOKEN)
 const creds = require('./credentials.json');
 const SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
