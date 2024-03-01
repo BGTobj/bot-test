@@ -3,9 +3,8 @@ const { message } = require('telegraf/filters')
 require('dotenv').config()
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
-const bot = new Telegraf('$BOT_TOKEN')
+const bot = new Telegraf(process.env.BOT_TOKEN)
 const creds = require('./credentials.json');
-const { keyboard } = require('telegraf/typings/markup');
 const SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive.file',
@@ -16,7 +15,7 @@ const serviceAccountAuth = new JWT({
     scopes: SCOPES,
   });
 
-const doc = new GoogleSpreadsheet('$SPREADSHEETID', serviceAccountAuth);
+const doc = new GoogleSpreadsheet(process.env.SPREADSHEETID, serviceAccountAuth);
 
 const getInfo = async () => {
     await doc.loadInfo();
@@ -33,12 +32,11 @@ const mainMenu = Markup
     .oneTime()
     .resize()
 
-const backMainMenu = Markup.keyboard([
-    'В главное меню',
-    ])
-.resize()
+const backMainMenu = Markup.inlineKeyboard(
+    [Markup.button.callback('В главное меню', 'mainMenu'),],
+    )
 
-bot.hears('В главное меню', async ctx => {
+bot.action('mainMenu', async ctx => {
     await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
 })
  // or use `doc.sheetsById[id]` or `doc.sheetsByTitle[title]`
@@ -138,7 +136,7 @@ const cities = Markup
         .oneTime()
         .resize()
 bot.hears('Адреса и график работы аптек', async ctx => {
-            await ctx.reply(`Выберите населенный пункт`, cities, {parse_mode: 'HTML'});
+    await ctx.reply(`Выберите населенный пункт`, cities, {parse_mode: 'HTML'});
   
 })
 
@@ -252,14 +250,12 @@ bot.on(message('text'), async ctx => {
     }
     for (const key in cityPromo) {
         if (cityPromo[key] === msg) {
-            await ctx.reply(`${datePromo[key]} проходит акция ${namePromo[key]}, для уточнения подробностей акции переходите по <a href="https://monastirev.ru/promotions/">ссылке</a>`, Markup.keyboard([
-                'В главное меню',
-                ]).resize(), {parse_mode: 'HTML', disable_web_page_preview: true});
-        } /* else {
+            await ctx.reply(`${datePromo[key]} проходит акция ${namePromo[key]}, для уточнения подробностей акции переходите по <a href="https://monastirev.ru/promotions/">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true});
+        }/* else {
             await ctx.reply(`Сейчас нет действующих акций`);
         } */
     }
-        
+    
 })
 
 bot.launch()
