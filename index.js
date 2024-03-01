@@ -3,7 +3,7 @@ const { message } = require('telegraf/filters')
 require('dotenv').config()
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
-const bot = new Telegraf(BOT_TOKEN)
+const bot = new Telegraf($BOT_TOKEN)
 const creds = require('./credentials.json');
 const { keyboard } = require('telegraf/typings/markup');
 const SCOPES = [
@@ -16,7 +16,7 @@ const serviceAccountAuth = new JWT({
     scopes: SCOPES,
   });
 
-const doc = new GoogleSpreadsheet(SPREADSHEETID, serviceAccountAuth);
+const doc = new GoogleSpreadsheet($SPREADSHEETID, serviceAccountAuth);
 
 const getInfo = async () => {
     await doc.loadInfo();
