@@ -261,6 +261,3 @@ bot.on(message('text'), async ctx => {
 })
 
 bot.launch()
-
-
-
