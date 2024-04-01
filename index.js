@@ -81,7 +81,7 @@ bot.start(async (ctx) => {
     const userFirstName = ctx.message.chat.first_name;
     await ctx.reply(`Welcome, ${userFirstName}`, mainMenu)
 });
-/*********** адреса и график работы аптек *************/
+/*********** адреса и график работы аптек (не доделан вывод информации по выбранной аптеке согласно задаче, доделаю сам) *************/
 const city = [];
 let idApt = [];
 let adress = [];
@@ -234,6 +234,8 @@ const myDrugStore = async () => {
         }
     })
 }
+/******************** конец функции получения списка аптек, если пользователь добавил какую-либо аптеку в избранное */
+
 /* функция для кнопки задать вопрос */
 const sendQuestion = async () => {
     bot.hears('Задать вопрос', async ctx => {
@@ -246,7 +248,7 @@ const sendQuestion = async () => {
         
 }
 
-// функция для кнопки оставить отзыв
+// функция для кнопки оставить отзыв (не доделано до конца по задаче)
 const sendReview = async () => {
     const buttons = Markup.keyboard([
         'поблагодарить нас',
