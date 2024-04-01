@@ -24,8 +24,8 @@ const doc = new GoogleSpreadsheet(process.env.SPREADSHEETID, serviceAccountAuth)
 //получение данных из google-sheets
 const getInfo = async () => {
     await doc.loadInfo();
-    const aptekiSheet = doc.sheetsByIndex[0];
-    const rows = await aptekiSheet.getRows();
+    //const aptekiSheet = doc.sheetsByIndex[0];
+    //const rows = await aptekiSheet.getRows();
 }
 
 let regionsKeyboard;
