@@ -16,7 +16,7 @@ const SCOPES = [
   ];
 const serviceAccountAuth = new JWT({
     email: CLIENT_EMAIL,
-    key: PRIVATE_KEY,
+    key: PRIVATE_KEY.replace(/\\n/g, '\n'),
     scopes: SCOPES,
   });
 
