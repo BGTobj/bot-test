@@ -8,7 +8,8 @@ import Mail from './mail.js'
 const appMailer = express()
 import { GoogleSpreadsheet } from'google-spreadsheet'
 import { JWT } from 'google-auth-library'
-const { BOT_TOKEN, PRIVATE_KEY, CLIENT_EMAIL } = process.env
+const { BOT_TOKEN, CLIENT_EMAIL } = process.env
+const { privateKey } = JSON.parse(process.env.PRIVATE_KEY)
 const bot = new Telegraf(BOT_TOKEN)
 const SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -16,7 +17,7 @@ const SCOPES = [
   ];
 const serviceAccountAuth = new JWT({
     email: CLIENT_EMAIL,
-    key: PRIVATE_KEY.replace(/\\n/g, '\n'),
+    key: privateKey,
     scopes: SCOPES,
   });
 
