@@ -69,7 +69,7 @@ const mainMenu = Markup
     .oneTime()
     .resize()
 
-//вывод главного меню по нажатию кнопки "в главное меню"
+//вывод главного меню по нажатию кнопки "в главное меню
 const backMainMenu = Markup.inlineKeyboard(
     [Markup.button.callback('В главное меню', 'mainMenu'),],
     )
