@@ -27,7 +27,7 @@ const doc = new GoogleSpreadsheet(process.env.SPREADSHEETID, serviceAccountAuth)
 const appMailer = express()
 appMailer.use(bodyParser.json())
 
-const db = new sqlite3.Database('testBot.sqlite3');
+const db = new sqlite3.Database('testBot.db');
 let sql;
 let userId;
 let userCity;
