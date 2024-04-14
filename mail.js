@@ -25,13 +25,13 @@ class Mail {
     async send(reciever, message) {
         try {
             const info = await this.#transporter.sendMail({
-                from: 'akur96@mail.ru',
+                from: EMAIL_HOST_USER,
                 to: reciever,
-                subject: 'Welcome to test mail',
+                subject: 'Отзыв об аптеке из телеграм-бота',
                 text: message,
                 html: `<b>${message}</b>`
             })
-            return info.envelope
+            return info.messageId
         } catch (e) {
             return e
         }
