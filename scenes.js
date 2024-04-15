@@ -152,8 +152,17 @@ class SceneGenerator {
                 }
             }
             arCity = Array.from(new Set(arCity))
+            if (arCity.length > 0) {
+                ctx.scene.leave()
+                ctx.scene.enter('getListDrugStore')
+            } else {
+                ctx.scene.leave()
+            }
+            
+        })
+        getCity.on(message, ctx => {
             ctx.scene.leave()
-            ctx.scene.enter('getListDrugStore')
+            ctx.reply(`Ошибка`, backMainMenu)
         })
         return getCity;
     }
@@ -172,8 +181,16 @@ class SceneGenerator {
                 }
             }
             arCity.length = 0;
+            if (arDrugStore.length > 0) {
+                ctx.scene.leave()
+                ctx.scene.enter('getDrugStore')
+            } else {
+                ctx.scene.leave()
+            }
+        })
+        getListDrugStore.on(message, ctx => {
             ctx.scene.leave()
-            ctx.scene.enter('getDrugStore')
+            ctx.reply(`Ошибка`, backMainMenu)
         })
         return getListDrugStore;
     }
@@ -219,6 +236,10 @@ class SceneGenerator {
             ctx.scene.leave()
             ctx.scene.enter('deleteFavoriteDrugstore');
         })
+        getDrugStore.on(message, ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Ошибка`, backMainMenu)
+        })
         return getDrugStore;
     }
 
@@ -235,6 +256,10 @@ class SceneGenerator {
         getContact.on(message('contact'), async (ctx) => {
             ctx.scene.leave()
             ctx.scene.enter('insertFavoriteDrugstore')
+        })
+        getContact.on(message, ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Ошибка`, backMainMenu)
         })
         return getContact;
     }
@@ -323,7 +348,10 @@ class SceneGenerator {
             })
             ctx.scene.leave()
         })
-        
+        myDrugStores.on(message, ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Ошибка`, backMainMenu)
+        })
         return myDrugStores;
     }
 
@@ -350,6 +378,10 @@ class SceneGenerator {
                 ctx.scene.enter('getReviewMessage')
             }  
         })
+        sendReview.on(message, async ctx => {
+            ctx.scene.leave()
+            await ctx.reply(`Ошибка`, backMainMenu)
+        })
         return sendReview;
     }
 
@@ -371,6 +403,10 @@ class SceneGenerator {
             ctx.scene.leave()
             ctx.scene.enter('getReviewMessage')
         })
+        getReviewMessageMan.on(message, async ctx => {
+            ctx.scene.leave()
+            await ctx.reply(`Ошибка`, backMainMenu)
+        })
         return getReviewMessageMan;
     }
 
@@ -388,6 +424,10 @@ class SceneGenerator {
                 ctx.scene.leave()
                 ctx.scene.enter('getUserEmail')
             }
+        })
+        getReviewMessage.on(message, async ctx => {
+            ctx.scene.leave()
+            await ctx.reply(`Ошибка`, backMainMenu)
         })
         return getReviewMessage;
     }
@@ -407,9 +447,13 @@ class SceneGenerator {
             ctx.reply(`Нажмите кнопку "отправить", чтобы отправить сообщение нам на почту`, Markup.inlineKeyboard(
                 [Markup.button.callback('Отправить', 'Send'),],
                 ))
-                ctx.scene.leave()
-                ctx.scene.enter('postReview')
-            })
+            ctx.scene.leave()
+            ctx.scene.enter('postReview')
+        })
+        getUserEmail.on(message, async ctx => {
+            ctx.scene.leave()
+            await ctx.reply(`Ошибка`, backMainMenu)
+        })
         return getUserEmail;
     }
 
