@@ -247,7 +247,7 @@ class SceneGenerator {
         const getContact = new Scenes.BaseScene("getContact");
         getContact.enter(async ctx => {
             ctx.reply(`Чтобы добавить аптеку в избранное необходимо поделиться номером телефона`, Markup.keyboard([Markup.button.contactRequest('Поделиться')]).oneTime().resize())
-            ctx.reply(`Выйти в главное меню`, {reply_markup: backMainMenu.reply_markup})
+            ctx.reply(`Назад`, {reply_markup: backMainMenu.reply_markup})
         })
         getContact.action('mainMenu', async ctx => {
             ctx.scene.leave()
