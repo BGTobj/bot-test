@@ -73,8 +73,6 @@ for (let key in rows) {
     urlYm.push(rows[key].get('urlYM'));
 }
 regions = Array.from(new Set(fullRegions));
-
-
 }
 getInfo();
 const buttons = ['Поблагодарить нас', 'Предложить идеи для улучшения', 'Отзыв о работе аптеки/сотрудника', 'Отзыв о наших товарах', 'В главное меню'];
@@ -138,9 +136,7 @@ class SceneGenerator {
             ctx.reply("Ошибка");
             ctx.scene.leave()
         })
-        
-        return sendQuestion;
-            
+        return sendQuestion;    
     }
 
     getCityScene() {
@@ -149,7 +145,6 @@ class SceneGenerator {
             ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regions).oneTime().resize(), {parse_mode: 'HTML'})
         })
         getCity.on(message('text'), async ctx => {
-            
             let msg = ctx.message.text;
             for (let i in fullRegions) {
                 if (msg === fullRegions[i]) {
@@ -166,7 +161,7 @@ class SceneGenerator {
     getListDrugStoreScene() {
         const getListDrugStore = new Scenes.BaseScene("getListDrugStore");
         getListDrugStore.enter( (ctx) => {
-            ctx.reply(`Выберите город`, Markup.keyboard(arCity).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Выберите город`, Markup.keyboard(arCity).oneTime().resize(), {parse_mode: 'HTML'}) 
         })
         getListDrugStore.on(message('text'), async ctx  => {
             let msg = ctx.message.text;
@@ -203,7 +198,6 @@ class SceneGenerator {
             }
             arDrugStore.length = 0;
             //ctx.scene.leave();
-            
         })
         getDrugStore.action('insertFavorite', (ctx) => {
             db.serialize(() => {
