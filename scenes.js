@@ -9,7 +9,7 @@ import { JWT } from 'google-auth-library'
 import sqlite3  from 'sqlite3'
 sqlite3.verbose();
 import Mail from './mail.js'
-const { CLIENT_EMAIL, EMAIL_HOST_USER } = process.env
+const { SPREADSHEETID, SPREADSHEETID_PROD, CLIENT_EMAIL, EMAIL_HOST_USER, GROUP_URL } = process.env
 const { privateKey } = JSON.parse(process.env.PRIVATE_KEY)
 const SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -21,7 +21,7 @@ const serviceAccountAuth = new JWT({
     scopes: SCOPES,
   });
 
-const doc = new GoogleSpreadsheet(process.env.SPREADSHEETID, serviceAccountAuth);
+const doc = new GoogleSpreadsheet(SPREADSHEETID_PROD, serviceAccountAuth);
 //получение данных из google-sheets
 
 const appMailer = express()
@@ -33,7 +33,7 @@ let userId;
 let userCity;
 let userDrugStoreId;
 let userDrugStoreAdress;
-let errorMsg;
+//let errorMsg;
 const mainMenu = Markup
     .keyboard([
       'Акции и спецпредложения', 
@@ -45,11 +45,11 @@ const mainMenu = Markup
     .oneTime()
     .resize()
 
-const keyboardFavorite = Markup.inlineKeyboard(
-    [Markup.button.callback('Добавить в избранное', 'insertFavorite'),
-    Markup.button.callback('Удалить из избранного', 'deleteFavorite')],
-    [Markup.button.callback('В главное меню', 'mainMenu')],
-    ).oneTime().resize()
+const deleteFavoriteKeyboard = Markup.inlineKeyboard(
+    [Markup.button.callback('Удалить из избранного', 'deleteFavorite'), Markup.button.callback('В главное меню', 'mainMenu')],).oneTime().resize()
+
+const insertFavoriteKeyboard = Markup.inlineKeyboard(
+    [Markup.button.callback('Добавить в избранное', 'insertFavorite'), Markup.button.callback('В главное меню', 'mainMenu')],).oneTime().resize()
 
 const fullRegions = [];
 let regions = [];
@@ -96,6 +96,10 @@ class SceneGenerator {
             let namePromo = [];
             let datePromo = [];
             const msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            }
             const promoSheet = doc.sheetsByIndex[1];
             const rowsPromo = await promoSheet.getRows();
             let key;
@@ -123,7 +127,7 @@ class SceneGenerator {
         sendQuestion.enter( (ctx) => {
             ctx.reply(`Для связи с оператором, вы будете перенаправлены в отдельный чат. Наши сотрудники помогут Вам и ответят на все вопросы\nДля продолжения нажмите ПЕРЕЙТИ`, 
                 Markup.inlineKeyboard(
-                    [Markup.button.url('Перейти', 'https://t.me/bgtobj'), Markup.button.callback('В главное меню', 'mainMenu'),],
+                    [Markup.button.url('Перейти', GROUP_URL), Markup.button.callback('В главное меню', 'mainMenu'),],
                 )
             )
             ctx.scene.leave()
@@ -146,6 +150,10 @@ class SceneGenerator {
         })
         getCity.on(message('text'), async ctx => {
             let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            }
             for (let i in fullRegions) {
                 if (msg === fullRegions[i]) {
                     arCity.push(cities[i]);
@@ -174,6 +182,10 @@ class SceneGenerator {
         })
         getListDrugStore.on(message('text'), async ctx  => {
             let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            }
             for (let i in fullRegions) {
                 if (msg === cities[i]) {
                     arDrugStore.push(`Аптека №${idApt[i]} на ${adress[i]}`);
@@ -203,11 +215,27 @@ class SceneGenerator {
         getDrugStore.on(message('text'), async ctx  => {
             userId = ctx.message.from.id;
             let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            }
             for (let i in fullRegions) {
                 if (msg === `Аптека №${idApt[i]} на ${adress[i]}`) {
                     userDrugStoreId = idApt[i];
                     userDrugStoreAdress = adress[i];
-                    await ctx.reply(`Аптека № ${idApt[i]} на ${adress[i]} г. ${cities[i]}, ${adress[i]}, режим работы ${schedule[i]}, <a href="${urlYm[i]}">как проехать</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: keyboardFavorite.reply_markup});
+                    db.serialize(() => {
+                        db.get(`SELECT id_apt, user_id FROM usersDrugstores WHERE id_apt = ? AND user_id = ?`, [userDrugStoreId, userId], (err, row) => {
+                            if (err) {
+                                return console.error(err.message)
+                            }
+                            if (row) {
+                                ctx.reply(`Аптека № ${idApt[i]} на ${adress[i]} г. ${cities[i]}, ${adress[i]}, режим работы ${schedule[i]}, <a href="${urlYm[i]}">как проехать</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: deleteFavoriteKeyboard.reply_markup});
+                            } else {
+                                ctx.reply(`Аптека № ${idApt[i]} на ${adress[i]} г. ${cities[i]}, ${adress[i]}, режим работы ${schedule[i]}, <a href="${urlYm[i]}">как проехать</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: insertFavoriteKeyboard.reply_markup});
+                            }
+                        });
+                    })
+                    //await ctx.reply(`Аптека № ${idApt[i]} на ${adress[i]} г. ${cities[i]}, ${adress[i]}, режим работы ${schedule[i]}, <a href="${urlYm[i]}">как проехать</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: keyboardFavorite.reply_markup});
                         //ctx.scene.leave();
                         /* ctx.scene.enter('insertFavoriteDrugstore')
                         ctx.scene.enter('deleteFavoriteDrugstore') */
@@ -217,24 +245,16 @@ class SceneGenerator {
             //ctx.scene.leave();
         })
         getDrugStore.action('insertFavorite', (ctx) => {
-            db.serialize(() => {
-                db.get(`SELECT user_id FROM usersDrugstores WHERE user_id = ?`, [userId], (err, row) => {
-                    if (err) {
-                        return console.error(err.message)
-                    }
-                    if (row) {
-                        ctx.scene.leave()
-                        ctx.scene.enter('insertFavoriteDrugstore')
-                    } else {
-                        ctx.scene.leave()
-                        ctx.scene.enter('getContact');
-                    }
-                });  
-            })  
+            ctx.scene.leave()
+            ctx.scene.enter('insertFavoriteDrugstore')
         })
         getDrugStore.action('deleteFavorite', (ctx) => {
             ctx.scene.leave()
             ctx.scene.enter('deleteFavoriteDrugstore');
+        })
+        getDrugStore.action('mainMenu', async ctx => {
+            ctx.scene.leave()
+            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
         })
         getDrugStore.on(message, ctx => {
             ctx.scene.leave()
@@ -243,49 +263,18 @@ class SceneGenerator {
         return getDrugStore;
     }
 
-    getContactScene() {
-        const getContact = new Scenes.BaseScene("getContact");
-        getContact.enter(async ctx => {
-            ctx.reply(`Чтобы добавить аптеку в избранное необходимо поделиться номером телефона`, Markup.keyboard([Markup.button.contactRequest('Поделиться')]).oneTime().resize())
-            ctx.reply(`Назад`, {reply_markup: backMainMenu.reply_markup})
-        })
-        getContact.action('mainMenu', async ctx => {
-            ctx.scene.leave()
-            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
-        })
-        getContact.on(message('contact'), async (ctx) => {
-            ctx.scene.leave()
-            ctx.scene.enter('insertFavoriteDrugstore')
-        })
-        getContact.on(message, ctx => {
-            ctx.scene.leave()
-            ctx.reply(`Ошибка`, backMainMenu)
-        })
-        return getContact;
-    }
-
     insertFavoriteDrugstoreScene() {
         const insertFavoriteDrugstore = new Scenes.BaseScene("insertFavoriteDrugstore");
         insertFavoriteDrugstore.enter(async ctx => {
             let userFavoriteDrugstoreData = [];
             userFavoriteDrugstoreData.push(userDrugStoreId, userCity, userDrugStoreAdress, userId)
             db.serialize(() => {
-                db.get(`SELECT id_apt, user_id FROM usersDrugstores WHERE id_apt = ? AND user_id = ?`, [userDrugStoreId, userId], (err, row) => {
-                    if (err) {
-                        return console.error(err.message)
+                sql = `INSERT INTO usersDrugstores(id_apt, cityOfDrugstore, adress, user_id) VALUES (?,?,?,?)`;
+                db.run(sql, userFavoriteDrugstoreData, (e) => {
+                    if(e) {
+                        return console.error(e.message)
                     }
-                    if (row) {
-                        errorMsg = `Вы уже добавили аптеку в избранное`
-                        ctx.reply(errorMsg)
-                        ctx.scene.leave()
-                    } else {
-                        sql = `INSERT INTO usersDrugstores(id_apt, cityOfDrugstore, adress, user_id) VALUES (?,?,?,?)`;
-                        db.run(sql, userFavoriteDrugstoreData, (e) => {
-                            if(e) {
-                                return console.error(e.message)
-                            }
-                        });
-                    }
+                    ctx.reply(`Аптека добавлена в избранное`)
                 });
             })
             await ctx.reply(`Если у вас остались вопросы, то можете ознакомиться с полной информацией по ассортименту в МП (ссылка), на сайте (ссылка) или задать вопрос оператору (ссылка)`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup})
@@ -310,6 +299,7 @@ class SceneGenerator {
                             }
                             ctx.scene.leave()
                         });
+                        ctx.reply(`Аптека удалена из избранного`)
                     } else {
                         ctx.reply(`Этой аптеки нет в избранном`);
                         ctx.scene.leave()
@@ -365,17 +355,16 @@ class SceneGenerator {
             if (msg === "Отзыв о работе аптеки/сотрудника") {
                 ctx.scene.leave()
                 ctx.scene.enter('getReviewMessageMan')
-            } else if (msg === "В главное меню") {
+            } else if (msg === "В главное меню" || msg === '/start') {
                 ctx.scene.leave()
                 ctx.reply(`Выберите, что Вас интересует`, mainMenu)
             } else {
                 for (let i in buttons) {
                     if (msg === buttons[i-1]) {
-                        ctx.reply(`Напишите, пожалуйста, ваш вопрос`)
+                        ctx.scene.leave()
+                        ctx.scene.enter('getReviewMessage')
                     }
                 }
-                ctx.scene.leave()
-                ctx.scene.enter('getReviewMessage')
             }  
         })
         sendReview.on(message, async ctx => {
@@ -388,20 +377,27 @@ class SceneGenerator {
     getReviewMessageManScene() {
         const getReviewMessageMan = new Scenes.BaseScene("getReviewMessageMan");
         getReviewMessageMan.enter((ctx) => {
-            ctx.reply(`Укажите, пожалуйста, адрес аптеки в формате "улица дом"`)
+            ctx.reply(`Укажите, пожалуйста, адрес аптеки в формате "улица дом"`, backMainMenu)
         })
         getReviewMessageMan.on(message('text'), async ctx => {
             let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            }
             for (let i in adress) {
                 if (msg === adress[i]) {
                     adressDrugStore = msg
+                    ctx.scene.leave()
+                    ctx.scene.enter('getReviewMessage')
                 } else {
                     ctx.scene.leave()
                 }
             }
-            ctx.reply(`Напишите, пожалуйста, ваш вопрос`)
+        })
+        getReviewMessageMan.action('mainMenu', async ctx => {
             ctx.scene.leave()
-            ctx.scene.enter('getReviewMessage')
+            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
         })
         getReviewMessageMan.on(message, async ctx => {
             ctx.scene.leave()
@@ -412,10 +408,16 @@ class SceneGenerator {
 
     getReviewMessageScene() {
         const getReviewMessage = new Scenes.BaseScene("getReviewMessage");
+        getReviewMessage.enter((ctx) => {
+            ctx.reply(`Напишите, пожалуйста, ваш вопрос`, backMainMenu)
+        })
         getReviewMessage.on(message('text'), async ctx => {
             let msg = ctx.message.text;
             if (msg.length === 0) {
                 ctx.scene.reenter()
+            } else if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
             } else {
                 userMessage = msg;
                 ctx.reply(`Укажите, пожалуйста, адрес вашей электронной почты, телефон если желаете получить ответ`, Markup.inlineKeyboard(
@@ -424,6 +426,10 @@ class SceneGenerator {
                 ctx.scene.leave()
                 ctx.scene.enter('getUserEmail')
             }
+        })
+        getReviewMessage.action('mainMenu', async ctx => {
+            ctx.scene.leave()
+            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
         })
         getReviewMessage.on(message, async ctx => {
             ctx.scene.leave()
@@ -443,12 +449,17 @@ class SceneGenerator {
             })
         getUserEmail.on(message('text'), async ctx => {
             let msg = ctx.message.text;
-            userEmail = msg;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            } else {
+                userEmail = msg;
             ctx.reply(`Нажмите кнопку "отправить", чтобы отправить сообщение нам на почту`, Markup.inlineKeyboard(
                 [Markup.button.callback('Отправить', 'Send'),],
                 ))
             ctx.scene.leave()
             ctx.scene.enter('postReview')
+            }
         })
         getUserEmail.on(message, async ctx => {
             ctx.scene.leave()

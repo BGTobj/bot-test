@@ -16,11 +16,11 @@ const getReviewMessageMan = curScene.getReviewMessageManScene()
 const myDrugStores = curScene.myDrugStoresScene()
 const insertFavoriteDrugstore = curScene.insertFavoriteDrugstoreScene()
 const deleteFavoriteDrugstore = curScene.deleteFavoriteDrugstoreScene()
-const getContact = curScene.getContactScene()
+
 const { BOT_TOKEN } = process.env
 const bot = new Telegraf(BOT_TOKEN)
 
-const stage = new Scenes.Stage([promo, sendQuestion, getCity, getListDrugStore, getDrugStore, sendReview, getReviewMessage, getUserEmail, postReview, getReviewMessageMan, myDrugStores, insertFavoriteDrugstore, deleteFavoriteDrugstore, getContact]);
+const stage = new Scenes.Stage([promo, sendQuestion, getCity, getListDrugStore, getDrugStore, sendReview, getReviewMessage, getUserEmail, postReview, getReviewMessageMan, myDrugStores, insertFavoriteDrugstore, deleteFavoriteDrugstore]);
     bot.use(session());
     bot.use(stage.middleware());
     bot.hears("Акции и спецпредложения", async ctx => { 
