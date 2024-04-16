@@ -42,7 +42,7 @@ const stage = new Scenes.Stage([promo, sendQuestion, getCity, getListDrugStore, 
     //команда запуска бота с приветствием и выбор пункта из главного меню
     bot.start(async (ctx) => {
         const userFirstName = ctx.message.chat.first_name;
-        await ctx.reply(`Welcome, ${userFirstName}`, mainMenu)
+        await ctx.reply(`Здравствуйте, ${userFirstName}, Вы находитесь в телеграм-боте сети аптек "Монастырёв". Выберите, что Вас интересует`, mainMenu)
     });
 
 

@@ -9,7 +9,7 @@ import { JWT } from 'google-auth-library'
 import sqlite3  from 'sqlite3'
 sqlite3.verbose();
 import Mail from './mail.js'
-const { SPREADSHEETID, SPREADSHEETID_PROD, CLIENT_EMAIL, EMAIL_HOST_USER, GROUP_URL } = process.env
+const { SPREADSHEETID_PROD, CLIENT_EMAIL, EMAIL_HOST_USER, GROUP_URL } = process.env
 const { privateKey } = JSON.parse(process.env.PRIVATE_KEY)
 const SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -110,7 +110,7 @@ class SceneGenerator {
             }
             for (key in regionPromo) {
                 if(msg === regionPromo[key]) {
-                    await ctx.reply(`${datePromo[key]} проходит акция ${namePromo[key]}, для уточнения подробностей акции переходите по <a href="https://monastirev.ru/promotions/">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
+                    await ctx.reply(`${datePromo[key]} проходит акция "${namePromo[key]}", для уточнения подробностей акции переходите по <a href="https://monastirev.ru/promotions/">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
                 }
             }
             ctx.scene.leave()
@@ -409,7 +409,7 @@ class SceneGenerator {
     getReviewMessageScene() {
         const getReviewMessage = new Scenes.BaseScene("getReviewMessage");
         getReviewMessage.enter((ctx) => {
-            ctx.reply(`Напишите, пожалуйста, ваш вопрос`, backMainMenu)
+            ctx.reply(`Напишите, пожалуйста, Ваш отзыв или предложите идею для улучшения`, backMainMenu)
         })
         getReviewMessage.on(message('text'), async ctx => {
             let msg = ctx.message.text;
