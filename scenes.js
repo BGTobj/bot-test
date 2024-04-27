@@ -68,6 +68,7 @@ let namePromo = [];
 let datePromo = [];
 let idAptPromo = [];
 let adressPromo = [];
+let urlPromo = [];
 //получение данных из google-sheets
 const getInfo = async () => {
     await doc.loadInfo()
@@ -81,6 +82,7 @@ const getInfo = async () => {
         regionPromo.push(row.get('region'));
         idAptPromo.push(row.get('id_apt_promo'));
         adressPromo.push(row.get('adress_apt_promo'));
+        urlPromo.push(row.get('url_promo'));
     }
     for (let key in rows) {
         fullRegions.push(rows[key].get('region'));
@@ -204,7 +206,7 @@ class SceneGenerator {
             }
             for (let i in idAptPromo) {
                 if (msg === `Аптека №${idAptPromo[i]} на ${adressPromo[i]}`) {
-                    ctx.reply(`В аптеке № ${idAptPromo[i]} по адресу ${adressPromo[i]} ${datePromo[i]} проходит акция "${namePromo[i]}", для уточнения подробностей акции переходите по <a href="https://monastirev.ru/promotions/">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
+                    ctx.reply(`В аптеке № ${idAptPromo[i]} по адресу ${adressPromo[i]} ${datePromo[i]} проходит акция "${namePromo[i]}", для уточнения подробностей акции переходите по <a href="${urlPromo[i]}">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
                 } 
             }
             arDrugStore.length = 0;
@@ -234,7 +236,7 @@ class SceneGenerator {
             }
             for (let key in regionPromo) {
                 if(msg === regionPromo[key]) {
-                    await ctx.reply(`${datePromo[key]} проходит акция "${namePromo[key]}", для уточнения подробностей акции переходите по <a href="https://monastirev.ru/promotions/">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
+                    await ctx.reply(`${datePromo[key]} проходит акция "${namePromo[key]}", для уточнения подробностей акции переходите по <a href="${urlPromo[key]}">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
                 }
             }
             ctx.scene.leave()
