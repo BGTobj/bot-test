@@ -3,7 +3,11 @@ import dotenv from 'dotenv'
 dotenv.config()
 import SceneGenerator from './scenes.js'
 const curScene = new SceneGenerator()
+const startPromo = curScene.startPromoScene()
 const promo = curScene.getPromoScene()
+const getPromoCity = curScene.getPromoCityScene()
+const getListPromoDrugStore = curScene.getListPromoDrugStoreScene()
+const getPromoDrugStore = curScene.getPromoDrugStoreScene()
 const sendQuestion = curScene.sendQuestionScene()
 const getCity = curScene.getCityScene()
 const getListDrugStore = curScene.getListDrugStoreScene()
@@ -16,15 +20,17 @@ const getReviewMessageMan = curScene.getReviewMessageManScene()
 const myDrugStores = curScene.myDrugStoresScene()
 const insertFavoriteDrugstore = curScene.insertFavoriteDrugstoreScene()
 const deleteFavoriteDrugstore = curScene.deleteFavoriteDrugstoreScene()
+const importantMessageCity = curScene.importantMessageCityScene()
+const getImportantMessage = curScene.getImportantMessageScene()
 
-const { BOT_TOKEN } = process.env
+const { BOT_TOKEN, GROUP_URL } = process.env
 const bot = new Telegraf(BOT_TOKEN)
 
-const stage = new Scenes.Stage([promo, sendQuestion, getCity, getListDrugStore, getDrugStore, sendReview, getReviewMessage, getUserEmail, postReview, getReviewMessageMan, myDrugStores, insertFavoriteDrugstore, deleteFavoriteDrugstore]);
+const stage = new Scenes.Stage([startPromo, promo, getPromoCity, getListPromoDrugStore, getPromoDrugStore, sendQuestion, getCity, getListDrugStore, getDrugStore, sendReview, getReviewMessage, getUserEmail, postReview, getReviewMessageMan, myDrugStores, insertFavoriteDrugstore, deleteFavoriteDrugstore, importantMessageCity, getImportantMessage]);
     bot.use(session());
     bot.use(stage.middleware());
     bot.hears("Акции и спецпредложения", async ctx => { 
-        ctx.scene.enter("promo")
+        ctx.scene.enter("startPromo")
     });
     bot.hears("Задать вопрос", async ctx => {
         ctx.scene.leave();
@@ -38,6 +44,9 @@ const stage = new Scenes.Stage([promo, sendQuestion, getCity, getListDrugStore, 
     });
     bot.hears("Мои аптеки", async ctx => {
         ctx.scene.enter("myDrugStores")
+    });
+    bot.hears("Важные сообщения", async ctx => {
+        ctx.scene.enter("importantMessageCity")
     });
     //команда запуска бота с приветствием и выбор пункта из главного меню
     bot.start(async (ctx) => {
@@ -53,7 +62,9 @@ const mainMenu = Markup
       'Адреса и график работы аптек', 
       'Мои аптеки',
       'Оставить отзыв',
-      'Задать вопрос'
+      'Задать вопрос',
+      'Важные сообщения',
+      'Наш телеграм-канал',
     ])
     .oneTime()
     .resize()
@@ -64,6 +75,15 @@ const backMainMenu = Markup.inlineKeyboard(
     )
 bot.action('mainMenu', async ctx => {
     await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+})
+
+bot.hears(`Наш телеграм-канал`, ctx => {
+    ctx.reply(`Переход в группу сети аптек "Монастырёв"\nДля продолжения нажмите ПЕРЕЙТИ`, 
+                Markup.inlineKeyboard(
+                    [[Markup.button.url('Перейти', GROUP_URL)],
+                    [Markup.button.callback('В главное меню', 'mainMenu')],],
+                )
+            )
 })
 
 

@@ -22,7 +22,6 @@ const serviceAccountAuth = new JWT({
   });
 
 const doc = new GoogleSpreadsheet(SPREADSHEETID_PROD, serviceAccountAuth);
-//получение данных из google-sheets
 
 const appMailer = express()
 appMailer.use(bodyParser.json())
@@ -33,23 +32,26 @@ let userId;
 let userCity;
 let userDrugStoreId;
 let userDrugStoreAdress;
-//let errorMsg;
 const mainMenu = Markup
     .keyboard([
       'Акции и спецпредложения', 
       'Адреса и график работы аптек', 
       'Мои аптеки',
       'Оставить отзыв',
-      'Задать вопрос'
+      'Задать вопрос',
+      'Важные сообщения',
+      'Наш телеграм-канал',
     ])
     .oneTime()
     .resize()
 
 const deleteFavoriteKeyboard = Markup.inlineKeyboard(
-    [Markup.button.callback('Удалить из избранного', 'deleteFavorite'), Markup.button.callback('В главное меню', 'mainMenu')],).oneTime().resize()
+    [[Markup.button.callback('Удалить из избранного', 'deleteFavorite')],
+    [Markup.button.callback('В главное меню', 'mainMenu')]],).oneTime().resize()
 
 const insertFavoriteKeyboard = Markup.inlineKeyboard(
-    [Markup.button.callback('Добавить в избранное', 'insertFavorite'), Markup.button.callback('В главное меню', 'mainMenu')],).oneTime().resize()
+    [[Markup.button.callback('Добавить в избранное', 'insertFavorite')],
+    [Markup.button.callback('В главное меню', 'mainMenu')]],).oneTime().resize()
 
 const fullRegions = [];
 let regions = [];
@@ -58,21 +60,38 @@ let idApt = [];
 let adress = [];
 let schedule = [];
 let urlYm = [];
+let importantMsg = [];
 let arCity = [];
 let arDrugStore = [];
+let regionPromo = [];
+let namePromo = [];
+let datePromo = [];
+let idAptPromo = [];
+let adressPromo = [];
+//получение данных из google-sheets
 const getInfo = async () => {
     await doc.loadInfo()
     const aptekiSheet = doc.sheetsByIndex[0];
     const rows = await aptekiSheet.getRows();
-for (let key in rows) {
-    fullRegions.push(rows[key].get('region'));
-    cities.push(rows[key].get('city'))
-    idApt.push(rows[key].get('id_apt'));
-    adress.push(rows[key].get('adress'));
-    schedule.push(rows[key].get('schedule'));
-    urlYm.push(rows[key].get('urlYM'));
-}
-regions = Array.from(new Set(fullRegions));
+    const promoSheet = doc.sheetsByIndex[1];
+    const rowsPromo = await promoSheet.getRows();
+    for (let row of rowsPromo) {
+        namePromo.push(row.get('name'));
+        datePromo.push(row.get('date'));
+        regionPromo.push(row.get('region'));
+        idAptPromo.push(row.get('id_apt_promo'));
+        adressPromo.push(row.get('adress_apt_promo'));
+    }
+    for (let key in rows) {
+        fullRegions.push(rows[key].get('region'));
+        cities.push(rows[key].get('city'))
+        idApt.push(rows[key].get('id_apt'));
+        adress.push(rows[key].get('adress'));
+        schedule.push(rows[key].get('schedule'));
+        urlYm.push(rows[key].get('urlYM'));
+        importantMsg.push(rows[key].get('important'));
+    }
+    regions = Array.from(new Set(fullRegions));
 }
 getInfo();
 const buttons = ['Поблагодарить нас', 'Предложить идеи для улучшения', 'Отзыв о работе аптеки/сотрудника', 'Отзыв о наших товарах', 'В главное меню'];
@@ -86,29 +105,134 @@ const backMainMenu = Markup.inlineKeyboard(
 const { enter, leave } = Scenes.Stage;
 
 class SceneGenerator {
+    startPromoScene() {
+        const startPromo = new Scenes.BaseScene("startPromo");
+        startPromo.enter((ctx) => {
+            ctx.reply(`Выберите, что вас интересует`, Markup.keyboard([`Акции в аптеке`, `Акции в регионе`]).oneTime().resize())
+        })
+        startPromo.on(message('text'), ctx => {
+            const msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            }
+            if (msg === `Акции в регионе`) {
+                ctx.scene.leave()
+                ctx.scene.enter('promo')
+            }
+            if (msg === `Акции в аптеке`) {
+                ctx.scene.leave()
+                ctx.scene.enter('getPromoCity')
+            }
+        })
+        return startPromo;
+    }
+
+    getPromoCityScene() {
+        const getPromoCity = new Scenes.BaseScene("getPromoCity");
+        getPromoCity.enter( (ctx) => {
+            ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regions).oneTime().resize(), {parse_mode: 'HTML'})
+        });
+        getPromoCity.on(message('text'), async ctx => {
+            let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            }
+            for (let i in fullRegions) {
+                if (msg === fullRegions[i]) {
+                    arCity.push(cities[i]);
+                }
+            }
+            arCity = Array.from(new Set(arCity))
+            if (arCity.length > 0) {
+                ctx.scene.leave()
+                ctx.scene.enter('getListPromoDrugStore')
+            } else {
+                ctx.scene.leave()
+            }
+            
+        })
+        getPromoCity.on(message, ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Ошибка`, backMainMenu)
+        })
+        return getPromoCity;
+    }
+
+    getListPromoDrugStoreScene() {
+        const getListPromoDrugStore = new Scenes.BaseScene("getListPromoDrugStore");
+        getListPromoDrugStore.enter( (ctx) => {
+            ctx.reply(`Выберите город`, Markup.keyboard(arCity).oneTime().resize(), {parse_mode: 'HTML'}) 
+        })
+        getListPromoDrugStore.on(message('text'), async ctx  => {
+            let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            }
+            for (let i in fullRegions) {
+                if (msg === cities[i]) {
+                    arDrugStore.push(`Аптека №${idApt[i]} на ${adress[i]}`);
+                }
+            }
+            arCity.length = 0;
+            if (arDrugStore.length > 0) {
+                ctx.scene.leave()
+                ctx.scene.enter('getPromoDrugStore')
+            } else {
+                ctx.scene.leave()
+            }
+        })
+        getListPromoDrugStore.on(message, ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Ошибка`, backMainMenu)
+        })
+        return getListPromoDrugStore;
+    }
+
+    getPromoDrugStoreScene() {
+        const getPromoDrugStore = new Scenes.BaseScene("getPromoDrugStore");
+        getPromoDrugStore.enter( (ctx) => {
+            ctx.reply(`Выберите аптеку`, Markup.keyboard(arDrugStore).oneTime().resize(), {parse_mode: 'HTML'})
+        })
+        getPromoDrugStore.on(message('text'), async ctx  => {
+            let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            }
+            for (let i in idAptPromo) {
+                if (msg === `Аптека №${idAptPromo[i]} на ${adressPromo[i]}`) {
+                    ctx.reply(`В аптеке № ${idAptPromo[i]} по адресу ${adressPromo[i]} ${datePromo[i]} проходит акция "${namePromo[i]}", для уточнения подробностей акции переходите по <a href="https://monastirev.ru/promotions/">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
+                } 
+            }
+            arDrugStore.length = 0;
+            
+        })
+        getPromoDrugStore.action('mainMenu', async ctx => {
+            ctx.scene.leave()
+            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+        })
+        getPromoDrugStore.on(message, ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Ошибка`, backMainMenu)
+        })
+        return getPromoDrugStore;
+    }
+
     getPromoScene() {
         const promo = new Scenes.BaseScene("promo");
         promo.enter( (ctx) => {
             ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regions).oneTime().resize(), {parse_mode: 'HTML'})
         });
         promo.on(message('text'), async ctx => {
-            let regionPromo = [];
-            let namePromo = [];
-            let datePromo = [];
             const msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
                 ctx.reply(`Выберите, что Вас интересует`, mainMenu)
             }
-            const promoSheet = doc.sheetsByIndex[1];
-            const rowsPromo = await promoSheet.getRows();
-            let key;
-            for (let row of rowsPromo) {
-                namePromo.push(row.get('name'));
-                datePromo.push(row.get('date'));
-                regionPromo.push(row.get('region'));
-            }
-            for (key in regionPromo) {
+            for (let key in regionPromo) {
                 if(msg === regionPromo[key]) {
                     await ctx.reply(`${datePromo[key]} проходит акция "${namePromo[key]}", для уточнения подробностей акции переходите по <a href="https://monastirev.ru/promotions/">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
                 }
@@ -127,7 +251,8 @@ class SceneGenerator {
         sendQuestion.enter( (ctx) => {
             ctx.reply(`Для связи с оператором, вы будете перенаправлены в отдельный чат. Наши сотрудники помогут Вам и ответят на все вопросы\nДля продолжения нажмите ПЕРЕЙТИ`, 
                 Markup.inlineKeyboard(
-                    [Markup.button.url('Перейти', GROUP_URL), Markup.button.callback('В главное меню', 'mainMenu'),],
+                    [[Markup.button.url('Перейти', GROUP_URL)],
+                    [Markup.button.callback('В главное меню', 'mainMenu')],],
                 )
             )
             ctx.scene.leave()
@@ -228,21 +353,13 @@ class SceneGenerator {
                             if (err) {
                                 return console.error(err.message)
                             }
-                            if (row) {
-                                ctx.reply(`Аптека № ${idApt[i]} на ${adress[i]} г. ${cities[i]}, ${adress[i]}, режим работы ${schedule[i]}, <a href="${urlYm[i]}">как проехать</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: deleteFavoriteKeyboard.reply_markup});
-                            } else {
-                                ctx.reply(`Аптека № ${idApt[i]} на ${adress[i]} г. ${cities[i]}, ${adress[i]}, режим работы ${schedule[i]}, <a href="${urlYm[i]}">как проехать</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: insertFavoriteKeyboard.reply_markup});
-                            }
+                            ctx.reply(`Аптека № ${idApt[i]}, г. ${cities[i]}, ${adress[i]}, режим работы ${schedule[i]}, <a href="${urlYm[i]}">как проехать</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: row ? deleteFavoriteKeyboard.reply_markup : insertFavoriteKeyboard.reply_markup});
+                            importantMsg[i] ? ctx.reply(`Важное сообщение: <b>${importantMsg[i]}</b>`, {parse_mode: 'HTML'}) : '';
                         });
                     })
-                    //await ctx.reply(`Аптека № ${idApt[i]} на ${adress[i]} г. ${cities[i]}, ${adress[i]}, режим работы ${schedule[i]}, <a href="${urlYm[i]}">как проехать</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: keyboardFavorite.reply_markup});
-                        //ctx.scene.leave();
-                        /* ctx.scene.enter('insertFavoriteDrugstore')
-                        ctx.scene.enter('deleteFavoriteDrugstore') */
                 }
             }
             arDrugStore.length = 0;
-            //ctx.scene.leave();
         })
         getDrugStore.action('insertFavorite', (ctx) => {
             ctx.scene.leave()
@@ -421,8 +538,7 @@ class SceneGenerator {
             } else {
                 userMessage = msg;
                 ctx.reply(`Укажите, пожалуйста, адрес вашей электронной почты, телефон если желаете получить ответ`, Markup.inlineKeyboard(
-                    [Markup.button.callback('Пропустить', 'Check'),],
-                    ))
+                    [Markup.button.callback('Пропустить', 'Check'),],))
                 ctx.scene.leave()
                 ctx.scene.enter('getUserEmail')
             }
@@ -455,8 +571,7 @@ class SceneGenerator {
             } else {
                 userEmail = msg;
             ctx.reply(`Нажмите кнопку "отправить", чтобы отправить сообщение нам на почту`, Markup.inlineKeyboard(
-                [Markup.button.callback('Отправить', 'Send'),],
-                ))
+                [Markup.button.callback('Отправить', 'Send'),],))
             ctx.scene.leave()
             ctx.scene.enter('postReview')
             }
@@ -475,13 +590,74 @@ class SceneGenerator {
             Mail.send(EMAIL_HOST_USER, data)
             ctx.reply(`Ваш вопрос передан в отдел контроля качества. Мы отвечаем в течение 2-х дней, но постараемся сделать это быстрее. Не забудьте проверить вашу почту и папку спам. Спасибо, что помогаете нам развиваться!`, backMainMenu)
             ctx.scene.leave()
-            //ctx.scene.enter('sendReview')
         })
         postReview.action('mainMenu', async ctx => {
             ctx.scene.leave()
             await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
         })
         return postReview;
+    }
+
+    importantMessageCityScene() {
+        const importantMessageCity = new Scenes.BaseScene("importantMessageCity");
+        importantMessageCity.enter((ctx) => {
+            ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regions).oneTime().resize(), {parse_mode: 'HTML'})
+        })
+        importantMessageCity.on(message('text'), async ctx => {
+            let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            }
+            for (let i in fullRegions) {
+                if (msg === fullRegions[i]) {
+                    arCity.push(cities[i]);
+                }
+            }
+            arCity = Array.from(new Set(arCity))
+            if (arCity.length > 0) {
+                ctx.scene.leave()
+                ctx.scene.enter('getImportantMessage')
+            } else {
+                ctx.scene.leave()
+            }
+            
+        })
+        importantMessageCity.on(message, ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Ошибка`, backMainMenu)
+        })
+        return importantMessageCity;
+    }
+
+    getImportantMessageScene() {
+        const getImportantMessage = new Scenes.BaseScene("getImportantMessage");
+        getImportantMessage.enter( (ctx) => {
+            ctx.reply(`Выберите город`, Markup.keyboard(arCity).oneTime().resize(), {parse_mode: 'HTML'}) 
+        })
+        getImportantMessage.on(message('text'), async ctx  => {
+            let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            }
+            for (let i in fullRegions) {
+                if (msg === cities[i]) {
+                    importantMsg[i] ? ctx.reply(`Важное сообщение для аптеки №${idApt[i]} по адресу ${adress[i]}: <b>${importantMsg[i]}</b>`, {parse_mode: 'HTML', reply_markup: backMainMenu.reply_markup}) : '';
+                    ctx.scene.leave()
+                }
+            }
+            arCity.length = 0;
+        })
+        getImportantMessage.action('mainMenu', async ctx => {
+            ctx.scene.leave()
+            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+        })
+        getImportantMessage.on(message, ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Ошибка`, backMainMenu)
+        })
+        return getImportantMessage;
     }
 }
 
