@@ -29,60 +29,62 @@ const bot = new Telegraf(BOT_TOKEN)
 const stage = new Scenes.Stage([startPromo, promo, getPromoCity, getListPromoDrugStore, getPromoDrugStore, sendQuestion, getCity, getListDrugStore, getDrugStore, sendReview, getReviewMessage, getUserEmail, postReview, getReviewMessageMan, myDrugStores, insertFavoriteDrugstore, deleteFavoriteDrugstore, importantMessageCity, getImportantMessage]);
     bot.use(session());
     bot.use(stage.middleware());
-    bot.hears("Акции и спецпредложения", async ctx => { 
+    bot.hears("📢 Акции и спецпредложения", async ctx => { 
         ctx.scene.enter("startPromo")
     });
-    bot.hears("Задать вопрос", async ctx => {
+    bot.hears("❓ Задать вопрос", async ctx => {
         ctx.scene.leave();
         ctx.scene.enter("sendQuestion")
     });
-    bot.hears("Адреса и график работы аптек", async ctx => { 
+    bot.hears("📍 Адреса и время работы", async ctx => { 
         ctx.scene.enter("getCity")
     });
-    bot.hears("Оставить отзыв", async ctx => { 
+    bot.hears("📝 Оставить отзыв", async ctx => { 
         ctx.scene.enter("sendReview")
     });
-    bot.hears("Мои аптеки", async ctx => {
+    bot.hears("⭐️ Мои аптеки", async ctx => {
         ctx.scene.enter("myDrugStores")
     });
-    bot.hears("Важные сообщения", async ctx => {
+    bot.hears("⚠️ Важные сообщения", async ctx => {
         ctx.scene.enter("importantMessageCity")
     });
     //команда запуска бота с приветствием и выбор пункта из главного меню
     bot.start(async (ctx) => {
         const userFirstName = ctx.message.chat.first_name;
-        await ctx.reply(`Здравствуйте, ${userFirstName}, Вы находитесь в телеграм-боте сети аптек "Монастырёв". Выберите, что Вас интересует`, mainMenu)
+        await ctx.reply(`Здравствуйте, ${userFirstName}, вы находитесь в телеграм-боте сети аптек "Монастырёв". Выберите, что вас интересует`, mainMenu)
     });
 
 
 //главное меню
 const mainMenu = Markup
     .keyboard([
-      'Акции и спецпредложения', 
-      'Адреса и график работы аптек', 
-      'Мои аптеки',
-      'Оставить отзыв',
-      'Задать вопрос',
-      'Важные сообщения',
-      'Наш телеграм-канал',
+        ['📢 Акции и спецпредложения', 
+        '📍 Адреса и время работы'],
+        ['⭐️ Мои аптеки', 
+        '📝 Оставить отзыв'],
+        ['❓ Задать вопрос',
+        '⚠️ Важные сообщения'],
+        ['💚 Наш канал']
     ])
     .oneTime()
     .resize()
 
 //вывод главного меню по нажатию кнопки "в главное меню
 const backMainMenu = Markup.inlineKeyboard(
-    [Markup.button.callback('В главное меню', 'mainMenu'),],
-    )
+    [[Markup.button.callback('↩️ Назад', 'back'),],
+    [Markup.button.callback('🏠 В главное меню', 'mainMenu'),],
+    ])
 bot.action('mainMenu', async ctx => {
-    await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+    await ctx.reply(`Выберите, что вас интересует`, mainMenu)
 })
 
-bot.hears(`Наш телеграм-канал`, ctx => {
-    ctx.reply(`Переход в группу сети аптек "Монастырёв"\nДля продолжения нажмите ПЕРЕЙТИ`, 
-                Markup.inlineKeyboard(
-                    [[Markup.button.url('Перейти', GROUP_URL)],
-                    [Markup.button.callback('В главное меню', 'mainMenu')],],
-                )
+bot.hears(`💚 Наш канал`, ctx => {
+    ctx.reply(`Переход в группу сети аптек "Монастырёв"\nДля продолжения нажмите <b>Перейти</b> 👇`, 
+    {parse_mode: 'HTML', reply_markup: Markup.inlineKeyboard(
+        [[Markup.button.url('⚠️ Перейти', GROUP_URL)],
+        [Markup.button.callback('🏠 В главное меню', 'mainMenu')],],
+    ).reply_markup}
+                
             )
 })
 

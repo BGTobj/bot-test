@@ -34,27 +34,28 @@ let userDrugStoreId;
 let userDrugStoreAdress;
 const mainMenu = Markup
     .keyboard([
-      'Акции и спецпредложения', 
-      'Адреса и график работы аптек', 
-      'Мои аптеки',
-      'Оставить отзыв',
-      'Задать вопрос',
-      'Важные сообщения',
-      'Наш телеграм-канал',
+        ['📢 Акции и спецпредложения', 
+        '📍 Адреса и время работы'],
+        ['⭐️ Мои аптеки', 
+        '📝 Оставить отзыв'],
+        ['❓ Задать вопрос',
+        '⚠️ Важные сообщения'],
+        ['💚 Наш канал']
     ])
     .oneTime()
     .resize()
 
 const deleteFavoriteKeyboard = Markup.inlineKeyboard(
     [[Markup.button.callback('Удалить из избранного', 'deleteFavorite')],
-    [Markup.button.callback('В главное меню', 'mainMenu')]],).oneTime().resize()
+    [Markup.button.callback('🏠 В главное меню', 'mainMenu')]],).oneTime().resize()
 
 const insertFavoriteKeyboard = Markup.inlineKeyboard(
     [[Markup.button.callback('Добавить в избранное', 'insertFavorite')],
-    [Markup.button.callback('В главное меню', 'mainMenu')]],).oneTime().resize()
+    [Markup.button.callback('🏠 В главное меню', 'mainMenu')]],).oneTime().resize()
 
 const fullRegions = [];
 let regions = [];
+let regionsRes = [];
 let cities = [];
 let idApt = [];
 let adress = [];
@@ -62,6 +63,7 @@ let schedule = [];
 let urlYm = [];
 let importantMsg = [];
 let arCity = [];
+let arCityRes = []
 let arDrugStore = [];
 let regionPromo = [];
 let namePromo = [];
@@ -69,6 +71,9 @@ let datePromo = [];
 let idAptPromo = [];
 let adressPromo = [];
 let urlPromo = [];
+let promoKeyboardRes = []
+let promoKeyboard = [`Акции в аптеке`, `Акции в регионе`, '↩️ Назад']
+while(promoKeyboard.length) promoKeyboardRes.push(promoKeyboard.splice(0,2));
 //получение данных из google-sheets
 const getInfo = async () => {
     await doc.loadInfo()
@@ -94,29 +99,33 @@ const getInfo = async () => {
         importantMsg.push(rows[key].get('important'));
     }
     regions = Array.from(new Set(fullRegions));
+    while(regions.length) regionsRes.push(regions.splice(0,2));
 }
 getInfo();
-const buttons = ['Поблагодарить нас', 'Предложить идеи для улучшения', 'Отзыв о работе аптеки/сотрудника', 'Отзыв о наших товарах', 'В главное меню'];
+const buttons = ['Поблагодарить нас', 'Предложить идеи для улучшения', 'Отзыв о работе аптеки/сотрудника', 'Отзыв о наших товарах', '🏠 В главное меню'];
 let userMessage = ''
 let userEmail = 'Не указал'
 let adressDrugStore = 'Не указал'
 const backMainMenu = Markup.inlineKeyboard(
-    [Markup.button.callback('В главное меню', 'mainMenu'),],
-    )
+    [[Markup.button.callback('↩️ Назад', 'back'),],
+    [Markup.button.callback('🏠 В главное меню', 'mainMenu'),],
+    ])
 // Handler factories
 const { enter, leave } = Scenes.Stage;
 
 class SceneGenerator {
+    //Начало сцены "Акции и спецпредложения" с выбором акций в регионе или конкретной аптеке
     startPromoScene() {
         const startPromo = new Scenes.BaseScene("startPromo");
         startPromo.enter((ctx) => {
-            ctx.reply(`Выберите, что вас интересует`, Markup.keyboard([`Акции в аптеке`, `Акции в регионе`]).oneTime().resize())
+            ctx.reply(`Выберите, что вас интересует`, Markup.keyboard(promoKeyboardRes).oneTime().resize())
         })
+        
         startPromo.on(message('text'), ctx => {
             const msg = ctx.message.text;
-            if (msg === '/start') {
+            if (msg === '/start' || msg === '↩️ Назад') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
             if (msg === `Акции в регионе`) {
                 ctx.scene.leave()
@@ -130,30 +139,43 @@ class SceneGenerator {
         return startPromo;
     }
 
+    //получение списка городов из выбранного региона для акций
     getPromoCityScene() {
         const getPromoCity = new Scenes.BaseScene("getPromoCity");
         getPromoCity.enter( (ctx) => {
-            ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regions).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regionsRes).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
+            arCityRes.length = 0;
         });
+        getPromoCity.action('mainMenu', ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        getPromoCity.action('back', ctx => {
+            ctx.scene.leave()
+            ctx.scene.enter('startPromo')
+        })
         getPromoCity.on(message('text'), async ctx => {
+            
             let msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
             for (let i in fullRegions) {
                 if (msg === fullRegions[i]) {
                     arCity.push(cities[i]);
                 }
             }
+            
             arCity = Array.from(new Set(arCity))
-            if (arCity.length > 0) {
+            while(arCity.length) arCityRes.push(arCity.splice(0,2));
+            if (arCityRes.length > 0) {
                 ctx.scene.leave()
                 ctx.scene.enter('getListPromoDrugStore')
             } else {
                 ctx.scene.leave()
             }
-            
         })
         getPromoCity.on(message, ctx => {
             ctx.scene.leave()
@@ -162,16 +184,27 @@ class SceneGenerator {
         return getPromoCity;
     }
 
+    //получение списка аптек из выбранного города для акций
     getListPromoDrugStoreScene() {
         const getListPromoDrugStore = new Scenes.BaseScene("getListPromoDrugStore");
         getListPromoDrugStore.enter( (ctx) => {
-            ctx.reply(`Выберите город`, Markup.keyboard(arCity).oneTime().resize(), {parse_mode: 'HTML'}) 
+            ctx.reply(`Выберите город`, Markup.keyboard(arCityRes).oneTime().resize(), {parse_mode: 'HTML'}) 
+            ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
+        });
+        getListPromoDrugStore.action('mainMenu', ctx => {
+            arCityRes.length = 0;
+            ctx.scene.leave()
+            ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        getListPromoDrugStore.action('back', ctx => {
+            ctx.scene.leave()
+            ctx.scene.enter('getPromoCity')
         })
         getListPromoDrugStore.on(message('text'), async ctx  => {
             let msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
             for (let i in fullRegions) {
                 if (msg === cities[i]) {
@@ -179,6 +212,7 @@ class SceneGenerator {
                 }
             }
             arCity.length = 0;
+            //arCityRes.length = 0;
             if (arDrugStore.length > 0) {
                 ctx.scene.leave()
                 ctx.scene.enter('getPromoDrugStore')
@@ -193,28 +227,38 @@ class SceneGenerator {
         return getListPromoDrugStore;
     }
 
+    //получение акций по выбранной аптеке
     getPromoDrugStoreScene() {
         const getPromoDrugStore = new Scenes.BaseScene("getPromoDrugStore");
         getPromoDrugStore.enter( (ctx) => {
             ctx.reply(`Выберите аптеку`, Markup.keyboard(arDrugStore).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
+        });
+        getPromoDrugStore.action('mainMenu', async ctx => {
+            arDrugStore.length = 0;
+            ctx.scene.leave()
+            await ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        getPromoDrugStore.action('back', ctx => {
+            arDrugStore.length = 0;
+            ctx.scene.leave()
+            ctx.scene.enter('getListPromoDrugStore')
         })
         getPromoDrugStore.on(message('text'), async ctx  => {
             let msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
             for (let i in idAptPromo) {
                 if (msg === `Аптека №${idAptPromo[i]} на ${adressPromo[i]}`) {
                     ctx.reply(`В аптеке № ${idAptPromo[i]} по адресу ${adressPromo[i]} ${datePromo[i]} проходит акция "${namePromo[i]}", для уточнения подробностей акции переходите по <a href="${urlPromo[i]}">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
-                } 
+                } else {
+                    continue
+                }
             }
+            ctx.reply(`В выбранной аптеке сейчас нет активных акций 😔`, backMainMenu)
             arDrugStore.length = 0;
-            
-        })
-        getPromoDrugStore.action('mainMenu', async ctx => {
-            ctx.scene.leave()
-            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
         })
         getPromoDrugStore.on(message, ctx => {
             ctx.scene.leave()
@@ -223,45 +267,56 @@ class SceneGenerator {
         return getPromoDrugStore;
     }
 
+    //получение всех проходящих акций из выбранного региона
     getPromoScene() {
         const promo = new Scenes.BaseScene("promo");
         promo.enter( (ctx) => {
-            ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regions).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regionsRes).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
         });
         promo.on(message('text'), async ctx => {
             const msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
             for (let key in regionPromo) {
                 if(msg === regionPromo[key]) {
-                    await ctx.reply(`${datePromo[key]} проходит акция "${namePromo[key]}", для уточнения подробностей акции переходите по <a href="${urlPromo[key]}">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
+                    await ctx.reply(`${datePromo[key]} проходит акция "${namePromo[key]}", для уточнения подробностей акции переходите по <a href="${urlPromo[key]}">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true,  reply_markup: Markup.inlineKeyboard(
+                        [Markup.button.callback('🏠 В главное меню', 'mainMenu')],).reply_markup});
+                } else {
+                    continue
                 }
             }
+            ctx.reply(`В выбранном регионе сейчас нет активных акций 😔`)
             ctx.scene.leave()
         });
         promo.on("message", (ctx) => {
             ctx.reply("Вы не выбрали населенный пункт");
             ctx.scene.reenter()
         });
+        promo.action('back', ctx => {
+            ctx.scene.leave()
+            ctx.scene.enter('startPromo')
+        })
         return promo;
     }
 
+    //сцена обработки кнопки Задать вопрос и переход в чат для связи с оператором
     sendQuestionScene() {
         const sendQuestion = new Scenes.BaseScene("sendQuestion");
         sendQuestion.enter( (ctx) => {
-            ctx.reply(`Для связи с оператором, вы будете перенаправлены в отдельный чат. Наши сотрудники помогут Вам и ответят на все вопросы\nДля продолжения нажмите ПЕРЕЙТИ`, 
-                Markup.inlineKeyboard(
-                    [[Markup.button.url('Перейти', GROUP_URL)],
-                    [Markup.button.callback('В главное меню', 'mainMenu')],],
-                )
+            ctx.reply(`Для связи с оператором, вы будете перенаправлены в отдельный чат. Наши сотрудники помогут Вам и ответят на все вопросы\nДля продолжения нажмите <b>Перейти</b> 👇`, 
+                    {parse_mode: 'HTML', reply_markup: Markup.inlineKeyboard(
+                    [[Markup.button.url('⚠️ Перейти', GROUP_URL)],
+                    [Markup.button.callback('🏠 В главное меню', 'mainMenu')],], 
+                ).reply_markup}
             )
             ctx.scene.leave()
         })
         sendQuestion.action('mainMenu', async ctx => {
             ctx.scene.leave()
-            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            await ctx.reply(`Выберите, что вас интересует`, mainMenu)
         })
         sendQuestion.on("message", (ctx) => {
             ctx.reply("Ошибка");
@@ -270,16 +325,23 @@ class SceneGenerator {
         return sendQuestion;    
     }
 
+    //Сцена "Адреса и график работы аптек", выбор региона и получение списка городов
     getCityScene() {
         const getCity = new Scenes.BaseScene("getCity");
         getCity.enter( (ctx) => {
-            ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regions).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regionsRes).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Вернуться в главное меню`, Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu'),]))
+            arCityRes.length = 0;
+        })
+        getCity.action('mainMenu', ctx => {
+            ctx.scene.leave();
+            ctx.reply(`Выберите, что вас интересует`, mainMenu)
         })
         getCity.on(message('text'), async ctx => {
             let msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
             for (let i in fullRegions) {
                 if (msg === fullRegions[i]) {
@@ -287,7 +349,8 @@ class SceneGenerator {
                 }
             }
             arCity = Array.from(new Set(arCity))
-            if (arCity.length > 0) {
+            while(arCity.length) arCityRes.push(arCity.splice(0,2));
+            if (arCityRes.length > 0) {
                 ctx.scene.leave()
                 ctx.scene.enter('getListDrugStore')
             } else {
@@ -302,16 +365,27 @@ class SceneGenerator {
         return getCity;
     }
 
+    //Сцена "Адреса и график работы аптек", выбор города и получение списка аптек из города
     getListDrugStoreScene() {
         const getListDrugStore = new Scenes.BaseScene("getListDrugStore");
         getListDrugStore.enter( (ctx) => {
-            ctx.reply(`Выберите город`, Markup.keyboard(arCity).oneTime().resize(), {parse_mode: 'HTML'}) 
+            ctx.reply(`Выберите город`, Markup.keyboard(arCityRes).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
+        })
+        getListDrugStore.action('mainMenu', ctx => {
+            arCityRes.length = 0;
+            ctx.scene.leave()
+            ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        getListDrugStore.action('back', ctx => {
+            ctx.scene.leave()
+            ctx.scene.enter('getCity')
         })
         getListDrugStore.on(message('text'), async ctx  => {
             let msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
             for (let i in fullRegions) {
                 if (msg === cities[i]) {
@@ -320,6 +394,7 @@ class SceneGenerator {
                 }
             }
             arCity.length = 0;
+            //arCityRes.length = 0;
             if (arDrugStore.length > 0) {
                 ctx.scene.leave()
                 ctx.scene.enter('getDrugStore')
@@ -334,17 +409,29 @@ class SceneGenerator {
         return getListDrugStore;
     }
 
+    //Сцена "Адреса и график работы аптек", выбор аптеки и получение сообщения с информацией об аптеке
     getDrugStoreScene() {
         const getDrugStore = new Scenes.BaseScene("getDrugStore");
         getDrugStore.enter( (ctx) => {
             ctx.reply(`Выберите аптеку`, Markup.keyboard(arDrugStore).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
+        })
+        getDrugStore.action('mainMenu', async ctx => {
+            arDrugStore.length = 0;
+            ctx.scene.leave()
+            await ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        getDrugStore.action('back', ctx => {
+            arDrugStore.length = 0;
+            ctx.scene.leave()
+            ctx.scene.enter('getListDrugStore')
         })
         getDrugStore.on(message('text'), async ctx  => {
             userId = ctx.message.from.id;
             let msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
             for (let i in fullRegions) {
                 if (msg === `Аптека №${idApt[i]} на ${adress[i]}`) {
@@ -356,7 +443,7 @@ class SceneGenerator {
                                 return console.error(err.message)
                             }
                             ctx.reply(`Аптека № ${idApt[i]}, г. ${cities[i]}, ${adress[i]}, режим работы ${schedule[i]}, <a href="${urlYm[i]}">как проехать</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: row ? deleteFavoriteKeyboard.reply_markup : insertFavoriteKeyboard.reply_markup});
-                            importantMsg[i] ? ctx.reply(`Важное сообщение: <b>${importantMsg[i]}</b>`, {parse_mode: 'HTML'}) : '';
+                            importantMsg[i] ? ctx.reply(`⚠️ Важное сообщение: <b>${importantMsg[i]}</b>`, {parse_mode: 'HTML'}) : '';
                         });
                     })
                 }
@@ -373,7 +460,7 @@ class SceneGenerator {
         })
         getDrugStore.action('mainMenu', async ctx => {
             ctx.scene.leave()
-            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            await ctx.reply(`Выберите, что вас интересует`, mainMenu)
         })
         getDrugStore.on(message, ctx => {
             ctx.scene.leave()
@@ -382,6 +469,7 @@ class SceneGenerator {
         return getDrugStore;
     }
 
+    //Сцена "Адреса и график работы аптек", сцена обработка кнопки "Добавить в избранное"
     insertFavoriteDrugstoreScene() {
         const insertFavoriteDrugstore = new Scenes.BaseScene("insertFavoriteDrugstore");
         insertFavoriteDrugstore.enter(async ctx => {
@@ -402,6 +490,7 @@ class SceneGenerator {
         return insertFavoriteDrugstore;
     }
 
+    //Сцена "Мои аптеки", сцена обработка кнопки "Удалить из избранного"
     deleteFavoriteDrugstoreScene() {
         const deleteFavoriteDrugstore = new Scenes.BaseScene("deleteFavoriteDrugstore");
         deleteFavoriteDrugstore.enter(async (ctx) => {
@@ -431,6 +520,7 @@ class SceneGenerator {
         return deleteFavoriteDrugstore;
     }
 
+    //Сцена "Мои аптеки"
     myDrugStoresScene() {
         const myDrugStores = new Scenes.BaseScene("myDrugStores");
         myDrugStores.enter( (ctx) => {
@@ -451,7 +541,7 @@ class SceneGenerator {
                         ctx.reply(`Ваши аптеки`, Markup.keyboard(arUsersDrugstore).oneTime().resize())
                         ctx.scene.enter('getDrugStore')
                     } else {
-                        return ctx.reply(`Вы не добавили аптеку в избранное`, backMainMenu)
+                        return ctx.reply(`У вас пока нет аптек в избранном 🙂`, backMainMenu)
                     }
                   }); 
             })
@@ -464,19 +554,20 @@ class SceneGenerator {
         return myDrugStores;
     }
 
+    //Сцена "Оставить отзыв"
     sendReviewScene() {
         const sendReview = new Scenes.BaseScene("sendReview");
         sendReview.enter((ctx) => {
-            ctx.reply(`Выберите нужное`, Markup.keyboard(buttons).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`👇 Выберите категорию`, Markup.keyboard(buttons).oneTime().resize(), {parse_mode: 'HTML'})
         })
         sendReview.on(message('text'), async ctx => {
             let msg = ctx.message.text;
             if (msg === "Отзыв о работе аптеки/сотрудника") {
                 ctx.scene.leave()
                 ctx.scene.enter('getReviewMessageMan')
-            } else if (msg === "В главное меню" || msg === '/start') {
+            } else if (msg === "🏠 В главное меню" || msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             } else {
                 for (let i in buttons) {
                     if (msg === buttons[i-1]) {
@@ -493,16 +584,17 @@ class SceneGenerator {
         return sendReview;
     }
 
+    //Сцена "Оставить отзыв", отзыв о работе аптеки/сотрудника (указать адрес аптеки)
     getReviewMessageManScene() {
         const getReviewMessageMan = new Scenes.BaseScene("getReviewMessageMan");
         getReviewMessageMan.enter((ctx) => {
-            ctx.reply(`Укажите, пожалуйста, адрес аптеки в формате "улица дом"`, backMainMenu)
+            ctx.reply(`✏️ Укажите, пожалуйста, адрес аптеки в формате "улица дом"`, backMainMenu)
         })
         getReviewMessageMan.on(message('text'), async ctx => {
             let msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
             for (let i in adress) {
                 if (msg === adress[i]) {
@@ -516,7 +608,11 @@ class SceneGenerator {
         })
         getReviewMessageMan.action('mainMenu', async ctx => {
             ctx.scene.leave()
-            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            await ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        getReviewMessageMan.action('back', async ctx => {
+            ctx.scene.leave()
+            ctx.scene.enter('sendReview')
         })
         getReviewMessageMan.on(message, async ctx => {
             ctx.scene.leave()
@@ -525,10 +621,11 @@ class SceneGenerator {
         return getReviewMessageMan;
     }
 
+    //Сцена "Оставить отзыв", получение отзыва от пользователя
     getReviewMessageScene() {
         const getReviewMessage = new Scenes.BaseScene("getReviewMessage");
         getReviewMessage.enter((ctx) => {
-            ctx.reply(`Напишите, пожалуйста, Ваш отзыв или предложите идею для улучшения`, backMainMenu)
+            ctx.reply(`✏️ Напишите, пожалуйста, ваш отзыв или предложите идею для улучшения`, backMainMenu)
         })
         getReviewMessage.on(message('text'), async ctx => {
             let msg = ctx.message.text;
@@ -536,18 +633,22 @@ class SceneGenerator {
                 ctx.scene.reenter()
             } else if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             } else {
                 userMessage = msg;
-                ctx.reply(`Укажите, пожалуйста, адрес вашей электронной почты, телефон если желаете получить ответ`, Markup.inlineKeyboard(
-                    [Markup.button.callback('Пропустить', 'Check'),],))
+                ctx.reply(`✏️ Укажите, пожалуйста, адрес вашей электронной почты, телефон если желаете получить ответ`, Markup.inlineKeyboard(
+                    [Markup.button.callback('Пропустить', 'Check'),]))
                 ctx.scene.leave()
                 ctx.scene.enter('getUserEmail')
             }
         })
+        getReviewMessage.action('back', async ctx => {
+            ctx.scene.leave()
+            ctx.scene.enter('sendReview')
+        })
         getReviewMessage.action('mainMenu', async ctx => {
             ctx.scene.leave()
-            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            await ctx.reply(`Выберите, что вас интересует`, mainMenu)
         })
         getReviewMessage.on(message, async ctx => {
             ctx.scene.leave()
@@ -556,10 +657,11 @@ class SceneGenerator {
         return getReviewMessage;
     }
 
+    //Сцена "Оставить отзыв", получение email или номера телефона от пользователя (можно не указывать)
     getUserEmailScene() {
         const getUserEmail = new Scenes.BaseScene("getUserEmail");
         getUserEmail.action('Check', (ctx) => {
-            ctx.reply(`Нажмите кнопку "отправить", чтобы отправить сообщение нам на почту`, Markup.inlineKeyboard(
+            ctx.reply(`👇 Нажмите кнопку "отправить", чтобы отправить сообщение нам на почту`, Markup.inlineKeyboard(
                 [Markup.button.callback('Отправить', 'Send'),],
                 ))
                 ctx.scene.leave()
@@ -569,10 +671,10 @@ class SceneGenerator {
             let msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             } else {
                 userEmail = msg;
-            ctx.reply(`Нажмите кнопку "отправить", чтобы отправить сообщение нам на почту`, Markup.inlineKeyboard(
+            ctx.reply(`👇 Нажмите кнопку "отправить", чтобы отправить сообщение нам на почту`, Markup.inlineKeyboard(
                 [Markup.button.callback('Отправить', 'Send'),],))
             ctx.scene.leave()
             ctx.scene.enter('postReview')
@@ -585,31 +687,39 @@ class SceneGenerator {
         return getUserEmail;
     }
 
+    //Сцена "Оставить отзыв", отправка сообщения от пользователя на почту компании
     postReviewScene() {
         const postReview = new Scenes.BaseScene("postReview");
         postReview.action('Send', async (ctx) => {
             const data = `Адрес аптеки: ${adressDrugStore}\nПочта пользователя: ${userEmail}\nСообщение: ${userMessage}`
             Mail.send(EMAIL_HOST_USER, data)
-            ctx.reply(`Ваш вопрос передан в отдел контроля качества. Мы отвечаем в течение 2-х дней, но постараемся сделать это быстрее. Не забудьте проверить вашу почту и папку спам. Спасибо, что помогаете нам развиваться!`, backMainMenu)
+            ctx.reply(`Ваш вопрос передан в отдел контроля качества. Мы отвечаем в течение 2-х дней, но постараемся сделать это быстрее. Не забудьте проверить вашу почту и папку спам. Спасибо, что помогаете нам развиваться!`, Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]))
             ctx.scene.leave()
         })
         postReview.action('mainMenu', async ctx => {
             ctx.scene.leave()
-            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+            await ctx.reply(`Выберите, что вас интересует`, mainMenu)
         })
         return postReview;
     }
 
+    //Сцена "Важные сообщения", получение списка городов по выбранному региону
     importantMessageCityScene() {
         const importantMessageCity = new Scenes.BaseScene("importantMessageCity");
         importantMessageCity.enter((ctx) => {
-            ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regions).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regionsRes).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Вернуться в главное меню`, Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]))
+            arCityRes.length = 0;
+        })
+        importantMessageCity.action('mainMenu', ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Выберите, что вас интересует`, mainMenu)
         })
         importantMessageCity.on(message('text'), async ctx => {
             let msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
             for (let i in fullRegions) {
                 if (msg === fullRegions[i]) {
@@ -617,7 +727,8 @@ class SceneGenerator {
                 }
             }
             arCity = Array.from(new Set(arCity))
-            if (arCity.length > 0) {
+            while(arCity.length) arCityRes.push(arCity.splice(0,2));
+            if (arCityRes.length > 0) {
                 ctx.scene.leave()
                 ctx.scene.enter('getImportantMessage')
             } else {
@@ -632,29 +743,40 @@ class SceneGenerator {
         return importantMessageCity;
     }
 
+    //Сцена "Важные сообщения", получение важных сообщений в аптеках по выбранному городу
     getImportantMessageScene() {
         const getImportantMessage = new Scenes.BaseScene("getImportantMessage");
         getImportantMessage.enter( (ctx) => {
-            ctx.reply(`Выберите город`, Markup.keyboard(arCity).oneTime().resize(), {parse_mode: 'HTML'}) 
+            ctx.reply(`Выберите город`, Markup.keyboard(arCityRes).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
+        })
+        getImportantMessage.action('mainMenu', ctx => {
+            arCityRes.length = 0;
+            ctx.scene.leave()
+            ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        getImportantMessage.action('back', ctx => {
+            ctx.scene.leave()
+            ctx.scene.enter('importantMessageCity')
         })
         getImportantMessage.on(message('text'), async ctx  => {
             let msg = ctx.message.text;
             if (msg === '/start') {
                 ctx.scene.leave()
-                ctx.reply(`Выберите, что Вас интересует`, mainMenu)
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
             for (let i in fullRegions) {
                 if (msg === cities[i]) {
-                    importantMsg[i] ? ctx.reply(`Важное сообщение для аптеки №${idApt[i]} по адресу ${adress[i]}: <b>${importantMsg[i]}</b>`, {parse_mode: 'HTML', reply_markup: backMainMenu.reply_markup}) : '';
+                    importantMsg[i] ? ctx.reply(`⚠️ Аптека №${idApt[i]} по адресу ${adress[i]}: <b>${importantMsg[i]}</b>`, {parse_mode: 'HTML', reply_markup: backMainMenu.reply_markup}) : '';
                     ctx.scene.leave()
+                } else {
+                    continue
                 }
             }
+            ctx.reply(`В выбранном городе сейчас нет важных сообщений 😔`, Markup.inlineKeyboard([Markup.button.callback('В главное меню', 'mainMenu')]))
             arCity.length = 0;
         })
-        getImportantMessage.action('mainMenu', async ctx => {
-            ctx.scene.leave()
-            await ctx.reply(`Выберите, что Вас интересует`, mainMenu)
-        })
+        
         getImportantMessage.on(message, ctx => {
             ctx.scene.leave()
             ctx.reply(`Ошибка`, backMainMenu)
