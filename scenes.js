@@ -541,7 +541,7 @@ class SceneGenerator {
                         ctx.reply(`Ваши аптеки`, Markup.keyboard(arUsersDrugstore).oneTime().resize())
                         ctx.scene.enter('getDrugStore')
                     } else {
-                        return ctx.reply(`У вас пока нет аптек в избранном 🙂`, backMainMenu)
+                        return ctx.reply(`У вас пока нет аптек в избранном 🙂`, Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]))
                     }
                   }); 
             })
@@ -773,7 +773,7 @@ class SceneGenerator {
                     continue
                 }
             }
-            ctx.reply(`В выбранном городе сейчас нет важных сообщений 😔`, Markup.inlineKeyboard([Markup.button.callback('В главное меню', 'mainMenu')]))
+            ctx.reply(`В выбранном городе сейчас нет важных сообщений 😔`, Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]))
             arCity.length = 0;
         })
         
