@@ -288,7 +288,8 @@ class SceneGenerator {
                     continue
                 }
             }
-            ctx.reply(`В выбранном регионе сейчас нет активных акций 😔`)
+            ctx.reply(`В выбранном регионе сейчас нет активных акций 😔`, Markup.inlineKeyboard(
+                [Markup.button.callback('🏠 В главное меню', 'mainMenu')],))
             ctx.scene.leave()
         });
         promo.on("message", (ctx) => {
