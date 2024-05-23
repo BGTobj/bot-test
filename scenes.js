@@ -817,7 +817,7 @@ class SceneGenerator {
             }
             for (let key in cityImportant) {
                 if (msg === cityImportant[key]) {
-                    nameImportant[key] ? ctx.reply(`Важное сообщение по городу ${cityImportant[key]} : <b>${nameImportant[key]}</b>`, {parse_mode: 'HTML', reply_markup: backMainMenu.reply_markup}) : '';
+                    nameImportant[key] ? ctx.reply(`Важное сообщение по городу ${cityImportant[key]} : <b>${nameImportant[key]}</b>`, {parse_mode: 'HTML', reply_markup: Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]).reply_markup}) : '';
                     ctx.scene.leave()
                 } else {
                     continue
