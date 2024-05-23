@@ -71,9 +71,18 @@ let datePromo = [];
 let idAptPromo = [];
 let adressPromo = [];
 let urlPromo = [];
+let nameImportant = [];
+let dateImportant = [];
+let regionImportant = [];
+let cityImportant = [];
+let idAptImportant = [];
+let adressImportant = [];
 let promoKeyboardRes = []
 let promoKeyboard = [`Акции в аптеке`, `Акции в регионе`, '↩️ Назад']
 while(promoKeyboard.length) promoKeyboardRes.push(promoKeyboard.splice(0,2));
+let importantMsgKeyboardRes = [];
+let importantMsgKeyboard = [`Сообщения по городу`, `Сообщения по аптекам`, '↩️ Назад']
+while(importantMsgKeyboard.length) importantMsgKeyboardRes.push(importantMsgKeyboard.splice(0,2));
 //получение данных из google-sheets
 const getInfo = async () => {
     await doc.loadInfo()
@@ -81,6 +90,16 @@ const getInfo = async () => {
     const rows = await aptekiSheet.getRows();
     const promoSheet = doc.sheetsByIndex[1];
     const rowsPromo = await promoSheet.getRows();
+    const importantSheet = doc.sheetsByIndex[2];
+    const rowsImportant = await importantSheet.getRows();
+    for (let rowImp of rowsImportant) {
+        nameImportant.push(rowImp.get('name'));
+        dateImportant.push(rowImp.get('date'));
+        regionImportant.push(rowImp.get('region'));
+        cityImportant.push(rowImp.get('city'));
+        idAptImportant.push(rowImp.get('id_apt'));
+        adressImportant.push(rowImp.get('adress'));
+    }
     for (let row of rowsPromo) {
         namePromo.push(row.get('name'));
         datePromo.push(row.get('date'));
@@ -704,17 +723,47 @@ class SceneGenerator {
         return postReview;
     }
 
+    //Начало сцены "Важные сообщения" с выбором собщений по городу или конкретной аптеке
+
+    startImportantMsgScene() {
+        const startImportantMsg = new Scenes.BaseScene("startImportantMsg");
+        startImportantMsg.enter((ctx) => {
+            ctx.reply(`Выберите, что вас интересует`, Markup.keyboard(importantMsgKeyboardRes).oneTime().resize())
+        })
+
+        startImportantMsg.on(message('text'), ctx => {
+            const msg = ctx.message.text;
+            if (msg === '/start' || msg === '↩️ Назад') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
+            }
+            if (msg === `Сообщения по городу`) {
+                ctx.scene.leave()
+                ctx.scene.enter('importantMessageCity')
+            }
+            if (msg === `Сообщения по аптекам`) {
+                ctx.scene.leave()
+                ctx.scene.enter('getListCityImpotrantMsg')
+            }
+        })
+        return startImportantMsg;
+    }
+
     //Сцена "Важные сообщения", получение списка городов по выбранному региону
     importantMessageCityScene() {
         const importantMessageCity = new Scenes.BaseScene("importantMessageCity");
         importantMessageCity.enter((ctx) => {
             ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regionsRes).oneTime().resize(), {parse_mode: 'HTML'})
-            ctx.reply(`Вернуться в главное меню`, Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]))
+            ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
             arCityRes.length = 0;
         })
         importantMessageCity.action('mainMenu', ctx => {
             ctx.scene.leave()
             ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        importantMessageCity.action('back', ctx => {
+            ctx.scene.leave()
+            ctx.scene.enter('startImportantMsg')
         })
         importantMessageCity.on(message('text'), async ctx => {
             let msg = ctx.message.text;
@@ -744,7 +793,7 @@ class SceneGenerator {
         return importantMessageCity;
     }
 
-    //Сцена "Важные сообщения", получение важных сообщений в аптеках по выбранному городу
+    //Сцена "Важные сообщения", получение важных сообщений по выбранному городу
     getImportantMessageScene() {
         const getImportantMessage = new Scenes.BaseScene("getImportantMessage");
         getImportantMessage.enter( (ctx) => {
@@ -766,9 +815,9 @@ class SceneGenerator {
                 ctx.scene.leave()
                 ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
-            for (let i in fullRegions) {
-                if (msg === cities[i]) {
-                    importantMsg[i] ? ctx.reply(`⚠️ Аптека №${idApt[i]} по адресу ${adress[i]}: <b>${importantMsg[i]}</b>`, {parse_mode: 'HTML', reply_markup: backMainMenu.reply_markup}) : '';
+            for (let key in cityImportant) {
+                if (msg === cityImportant[key]) {
+                    nameImportant[key] ? ctx.reply(`Важное сообщение по городу ${cityImportant[key]} : <b>${nameImportant[key]}</b>`, {parse_mode: 'HTML', reply_markup: backMainMenu.reply_markup}) : '';
                     ctx.scene.leave()
                 } else {
                     continue
@@ -783,6 +832,134 @@ class SceneGenerator {
             ctx.reply(`Ошибка`, backMainMenu)
         })
         return getImportantMessage;
+    }
+
+    //получение списка городов из выбранного региона с важными сообщениями
+    getListCityImpotrantMsgScene () {
+        const getListCityImpotrantMsg = new Scenes.BaseScene("getListCityImpotrantMsg");
+        getListCityImpotrantMsg.enter( (ctx) => {
+            ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regionsRes).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
+            arCityRes.length = 0;
+        });
+        getListCityImpotrantMsg.action('mainMenu', ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        getListCityImpotrantMsg.action('back', ctx => {
+            ctx.scene.leave()
+            ctx.scene.enter('startImportantMsg')
+        })
+        getListCityImpotrantMsg.on(message('text'), async ctx => {
+            
+            let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
+            }
+            for (let i in fullRegions) {
+                if (msg === fullRegions[i]) {
+                    arCity.push(cities[i]);
+                }
+            }
+            
+            arCity = Array.from(new Set(arCity))
+            while(arCity.length) arCityRes.push(arCity.splice(0,2));
+            if (arCityRes.length > 0) {
+                ctx.scene.leave()
+                ctx.scene.enter('getListImportantMsgDrugStore')
+            } else {
+                ctx.scene.leave()
+            }
+        })
+        getListCityImpotrantMsg.on(message, ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Ошибка`, backMainMenu)
+        })
+        return getListCityImpotrantMsg;
+    }
+
+    //получение списка аптек из выбранного города с важными сообщениями
+    getListImportantMsgDrugStoreScene() {
+        const getListImportantMsgDrugStore = new Scenes.BaseScene("getListImportantMsgDrugStore");
+        getListImportantMsgDrugStore.enter( (ctx) => {
+            ctx.reply(`Выберите город`, Markup.keyboard(arCityRes).oneTime().resize(), {parse_mode: 'HTML'}) 
+            ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
+        });
+        getListImportantMsgDrugStore.action('mainMenu', ctx => {
+            arCityRes.length = 0;
+            ctx.scene.leave()
+            ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        getListImportantMsgDrugStore.action('back', ctx => {
+            ctx.scene.leave()
+            ctx.scene.enter('getListCityImpotrantMsg')
+        })
+        getListImportantMsgDrugStore.on(message('text'), async ctx  => {
+            let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
+            }
+            for (let i in fullRegions) {
+                if (msg === cities[i]) {
+                    arDrugStore.push(`Аптека №${idApt[i]} на ${adress[i]}`);
+                }
+            }
+            arCity.length = 0;
+            //arCityRes.length = 0;
+            if (arDrugStore.length > 0) {
+                ctx.scene.leave()
+                ctx.scene.enter('getImportantMsgDrugStore')
+            } else {
+                ctx.scene.leave()
+            }
+        })
+        getListImportantMsgDrugStore.on(message, ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Ошибка`, backMainMenu)
+        })
+        return getListImportantMsgDrugStore;
+    }
+
+    //получение важных сообщений по выбранной аптеке
+    getImportantMsgDrugStoreScene() {
+        const getImportantMsgDrugStore = new Scenes.BaseScene("getImportantMsgDrugStore");
+        getImportantMsgDrugStore.enter( (ctx) => {
+            ctx.reply(`Выберите аптеку`, Markup.keyboard(arDrugStore).oneTime().resize(), {parse_mode: 'HTML'})
+            ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
+        });
+        getImportantMsgDrugStore.action('mainMenu', async ctx => {
+            arDrugStore.length = 0;
+            ctx.scene.leave()
+            await ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        getImportantMsgDrugStore.action('back', ctx => {
+            arDrugStore.length = 0;
+            ctx.scene.leave()
+            ctx.scene.enter('getListImportantMsgDrugStore')
+        })
+        getImportantMsgDrugStore.on(message('text'), async ctx  => {
+            let msg = ctx.message.text;
+            if (msg === '/start') {
+                ctx.scene.leave()
+                ctx.reply(`Выберите, что вас интересует`, mainMenu)
+            }
+            for (let i in idAptImportant) {
+                if (msg === `Аптека №${idAptImportant[i]} на ${adressImportant[i]}`) {
+                    nameImportant[i] ? ctx.reply(`Важное сообщение для аптеки № ${idAptImportant[i]} по адресу ${adressImportant[i]}: ${nameImportant[i]}`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup}) : '';
+                } else {
+                    continue
+                }
+            }
+            ctx.reply(`В выбранной аптеке сейчас нет важных сообщений 😔`, backMainMenu)
+            arDrugStore.length = 0;
+        })
+        getImportantMsgDrugStore.on(message, ctx => {
+            ctx.scene.leave()
+            ctx.reply(`Ошибка`, backMainMenu)
+        })
+        return getImportantMsgDrugStore;
     }
 }
 

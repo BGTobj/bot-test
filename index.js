@@ -20,13 +20,17 @@ const getReviewMessageMan = curScene.getReviewMessageManScene()
 const myDrugStores = curScene.myDrugStoresScene()
 const insertFavoriteDrugstore = curScene.insertFavoriteDrugstoreScene()
 const deleteFavoriteDrugstore = curScene.deleteFavoriteDrugstoreScene()
+const startImportantMsg = curScene.startImportantMsgScene()
 const importantMessageCity = curScene.importantMessageCityScene()
 const getImportantMessage = curScene.getImportantMessageScene()
+const getListCityImpotrantMsg = curScene.getListCityImpotrantMsgScene()
+const getListImportantMsgDrugStore = curScene.getListImportantMsgDrugStoreScene()
+const getImportantMsgDrugStore = curScene.getImportantMsgDrugStoreScene()
 
 const { BOT_TOKEN, GROUP_URL } = process.env
 const bot = new Telegraf(BOT_TOKEN)
 
-const stage = new Scenes.Stage([startPromo, promo, getPromoCity, getListPromoDrugStore, getPromoDrugStore, sendQuestion, getCity, getListDrugStore, getDrugStore, sendReview, getReviewMessage, getUserEmail, postReview, getReviewMessageMan, myDrugStores, insertFavoriteDrugstore, deleteFavoriteDrugstore, importantMessageCity, getImportantMessage]);
+const stage = new Scenes.Stage([startPromo, promo, getPromoCity, getListPromoDrugStore, getPromoDrugStore, sendQuestion, getCity, getListDrugStore, getDrugStore, sendReview, getReviewMessage, getUserEmail, postReview, getReviewMessageMan, myDrugStores, insertFavoriteDrugstore, deleteFavoriteDrugstore, startImportantMsg, importantMessageCity, getImportantMessage, getListCityImpotrantMsg, getListImportantMsgDrugStore, getImportantMsgDrugStore]);
     bot.use(session());
     bot.use(stage.middleware());
     bot.hears("📢 Акции и спецпредложения", async ctx => { 
@@ -46,7 +50,7 @@ const stage = new Scenes.Stage([startPromo, promo, getPromoCity, getListPromoDru
         ctx.scene.enter("myDrugStores")
     });
     bot.hears("⚠️ Важные сообщения", async ctx => {
-        ctx.scene.enter("importantMessageCity")
+        ctx.scene.enter("startImportantMsg")
     });
     //команда запуска бота с приветствием и выбор пункта из главного меню
     bot.start(async (ctx) => {
