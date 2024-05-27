@@ -117,10 +117,12 @@ const getInfo = async () => {
         urlYm.push(rows[key].get('urlYM'));
         importantMsg.push(rows[key].get('important'));
     }
+    
     regions = Array.from(new Set(fullRegions));
     while(regions.length) regionsRes.push(regions.splice(0,2));
 }
 getInfo();
+let tmpRegion;
 const buttons = ['Поблагодарить нас', 'Предложить идеи для улучшения', 'Отзыв о работе аптеки/сотрудника', 'Отзыв о наших товарах', '🏠 В главное меню'];
 let userMessage = ''
 let userEmail = 'Не указал'
@@ -184,6 +186,7 @@ class SceneGenerator {
             for (let i in fullRegions) {
                 if (msg === fullRegions[i]) {
                     arCity.push(cities[i]);
+                    tmpRegion = msg;
                 }
             }
             
@@ -269,15 +272,25 @@ class SceneGenerator {
                 ctx.scene.leave()
                 ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
+            
+            let arResPromo = [];
+            let arResPromoRegion = [];
             for (let i in idAptPromo) {
                 if (msg === `Аптека №${idAptPromo[i]} на ${adressPromo[i]}`) {
-                    ctx.reply(`В аптеке № ${idAptPromo[i]} по адресу ${adressPromo[i]} ${datePromo[i]} проходит акция "${namePromo[i]}", для уточнения подробностей акции переходите по <a href="${urlPromo[i]}">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
-                } else {
+                    arResPromo.push(`В аптеке № ${idAptPromo[i]} по адресу ${adressPromo[i]} ${datePromo[i]} проходит акция "${namePromo[i]}", для уточнения подробностей акции переходите по <a href="${urlPromo[i]}">ссылке</a>\n`)
+                } else if (tmpRegion === regionPromo[i]){
+                    arResPromoRegion.push(`${datePromo[i]} проходит акция "${namePromo[i]}", для уточнения подробностей акции переходите по <a href="${urlPromo[i]}">ссылке</a>\n`)
                     continue
                 }
+                
             }
-            ctx.reply(`В выбранной аптеке сейчас нет активных акций 😔`, backMainMenu)
             arDrugStore.length = 0;
+            if (arResPromo.length > 0) {
+                ctx.reply(arResPromo.join(''), {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
+            } else {
+                ctx.reply(`В выбранной аптеке сейчас нет активных акций 😔. Акции, проходящие в регионе ${tmpRegion}`)
+                ctx.reply(arResPromoRegion.join(''), {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
+            }
         })
         getPromoDrugStore.on(message, ctx => {
             ctx.scene.leave()
@@ -299,16 +312,23 @@ class SceneGenerator {
                 ctx.scene.leave()
                 ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
+            let arResPromo = []
             for (let key in regionPromo) {
                 if(msg === regionPromo[key]) {
-                    await ctx.reply(`${datePromo[key]} проходит акция "${namePromo[key]}", для уточнения подробностей акции переходите по <a href="${urlPromo[key]}">ссылке</a>`, {parse_mode: 'HTML', disable_web_page_preview: true,  reply_markup: Markup.inlineKeyboard(
-                        [Markup.button.callback('🏠 В главное меню', 'mainMenu')],).reply_markup});
+                    arResPromo.push(`${datePromo[key]} проходит акция "${namePromo[key]}", для уточнения подробностей акции переходите по <a href="${urlPromo[key]}">ссылке</a>\n`)
                 } else {
                     continue
                 }
             }
-            ctx.reply(`В выбранном регионе сейчас нет активных акций 😔`, Markup.inlineKeyboard(
-                [Markup.button.callback('🏠 В главное меню', 'mainMenu')],))
+            if (arResPromo.length > 0) {
+                await ctx.reply(arResPromo.join(''), {parse_mode: 'HTML', disable_web_page_preview: true,  reply_markup: Markup.inlineKeyboard(
+                    [Markup.button.callback('🏠 В главное меню', 'mainMenu')],).reply_markup});
+            } else {
+                ctx.reply(`В выбранном регионе сейчас нет активных акций 😔`, Markup.inlineKeyboard(
+                    [Markup.button.callback('🏠 В главное меню', 'mainMenu')],))
+            }
+            
+            
             ctx.scene.leave()
         });
         promo.on("message", (ctx) => {
@@ -463,7 +483,6 @@ class SceneGenerator {
                                 return console.error(err.message)
                             }
                             ctx.reply(`Аптека № ${idApt[i]}, г. ${cities[i]}, ${adress[i]}, режим работы ${schedule[i]}, <a href="${urlYm[i]}">как проехать</a>`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: row ? deleteFavoriteKeyboard.reply_markup : insertFavoriteKeyboard.reply_markup});
-                            importantMsg[i] ? ctx.reply(`⚠️ Важное сообщение: <b>${importantMsg[i]}</b>`, {parse_mode: 'HTML'}) : '';
                         });
                     })
                 }
@@ -616,15 +635,9 @@ class SceneGenerator {
                 ctx.scene.leave()
                 ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
-            for (let i in adress) {
-                if (msg === adress[i]) {
-                    adressDrugStore = msg
-                    ctx.scene.leave()
-                    ctx.scene.enter('getReviewMessage')
-                } else {
-                    ctx.scene.leave()
-                }
-            }
+            adressDrugStore = msg
+            ctx.scene.leave()
+            ctx.scene.enter('getReviewMessage')
         })
         getReviewMessageMan.action('mainMenu', async ctx => {
             ctx.scene.leave()
@@ -815,16 +828,22 @@ class SceneGenerator {
                 ctx.scene.leave()
                 ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
+            let arResImportant = [];
             for (let key in cityImportant) {
                 if (msg === cityImportant[key]) {
-                    nameImportant[key] ? ctx.reply(`Важное сообщение по городу ${cityImportant[key]} : <b>${nameImportant[key]}</b>`, {parse_mode: 'HTML', reply_markup: Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]).reply_markup}) : '';
-                    ctx.scene.leave()
+                    arResImportant.push(`Важное сообщение по городу ${cityImportant[key]} : <b>${nameImportant[key]}</b>\n`)
+                    
                 } else {
                     continue
                 }
             }
-            ctx.reply(`В выбранном городе сейчас нет важных сообщений 😔`, Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]))
+            if (arResImportant.length > 0) {
+                await ctx.reply(arResImportant.join(''), {parse_mode: 'HTML', reply_markup: Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]).reply_markup});
+            } else {
+                ctx.reply(`В выбранном городе сейчас нет важных сообщений 😔`, Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]))
+            }
             arCity.length = 0;
+            ctx.scene.leave()
         })
         
         getImportantMessage.on(message, ctx => {
@@ -945,14 +964,20 @@ class SceneGenerator {
                 ctx.scene.leave()
                 ctx.reply(`Выберите, что вас интересует`, mainMenu)
             }
+            let arResImportant = [];
             for (let i in idAptImportant) {
                 if (msg === `Аптека №${idAptImportant[i]} на ${adressImportant[i]}`) {
-                    nameImportant[i] ? ctx.reply(`Важное сообщение для аптеки № ${idAptImportant[i]} по адресу ${adressImportant[i]}: ${nameImportant[i]}`, {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup}) : '';
-                } else {
+                    arResImportant.push(`Важное сообщение для аптеки № ${idAptImportant[i]} по адресу ${adressImportant[i]}: ${nameImportant[i]}\n`);
+                } else  {
                     continue
                 }
             }
-            ctx.reply(`В выбранной аптеке сейчас нет важных сообщений 😔`, backMainMenu)
+            if (arResImportant.length > 0) {
+                ctx.reply(arResImportant.join(''), {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup})
+            } else {
+                ctx.reply(`В выбранной аптеке сейчас нет важных сообщений 😔`, backMainMenu);
+            }
+            
             arDrugStore.length = 0;
         })
         getImportantMsgDrugStore.on(message, ctx => {
