@@ -50,7 +50,7 @@ const deleteFavoriteKeyboard = Markup.inlineKeyboard(
     [Markup.button.callback('🏠 В главное меню', 'mainMenu')]],).oneTime().resize()
 
 const insertFavoriteKeyboard = Markup.inlineKeyboard(
-    [[Markup.button.callback('Добавить в избранное', 'insertFavorite')],
+    [[Markup.button.callback('⭐️ Добавить в избранное', 'insertFavorite')],
     [Markup.button.callback('🏠 В главное меню', 'mainMenu')]],).oneTime().resize()
 
 const fullRegions = [];
@@ -288,7 +288,7 @@ class SceneGenerator {
             if (arResPromo.length > 0) {
                 ctx.reply(arResPromo.join(''), {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
             } else {
-                ctx.reply(`В выбранной аптеке сейчас нет активных акций 😔. Акции, проходящие в регионе ${tmpRegion}`)
+                ctx.reply(`В выбранной аптеке сейчас нет активных акций 😔. Акции в регионе ${tmpRegion} 👇`)
                 ctx.reply(arResPromoRegion.join(''), {parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: backMainMenu.reply_markup});
             }
         })
@@ -306,6 +306,14 @@ class SceneGenerator {
             ctx.reply(`Выберите населенный пункт`, Markup.keyboard(regionsRes).oneTime().resize(), {parse_mode: 'HTML'})
             ctx.reply(`Вернуться назад или в главное меню`, backMainMenu)
         });
+        promo.action('mainMenu', async ctx => {
+            ctx.scene.leave()
+            await ctx.reply(`Выберите, что вас интересует`, mainMenu)
+        })
+        promo.action('back', async ctx => {
+            ctx.scene.leave()
+            await ctx.scene.enter('startPromo')
+        })
         promo.on(message('text'), async ctx => {
             const msg = ctx.message.text;
             if (msg === '/start') {
@@ -321,24 +329,16 @@ class SceneGenerator {
                 }
             }
             if (arResPromo.length > 0) {
-                await ctx.reply(arResPromo.join(''), {parse_mode: 'HTML', disable_web_page_preview: true,  reply_markup: Markup.inlineKeyboard(
-                    [Markup.button.callback('🏠 В главное меню', 'mainMenu')],).reply_markup});
+                await ctx.reply(arResPromo.join(''), {parse_mode: 'HTML', disable_web_page_preview: true,  reply_markup: backMainMenu.reply_markup});
             } else {
-                ctx.reply(`В выбранном регионе сейчас нет активных акций 😔`, Markup.inlineKeyboard(
-                    [Markup.button.callback('🏠 В главное меню', 'mainMenu')],))
+                ctx.reply(`В выбранном регионе сейчас нет активных акций 😔`, backMainMenu)
             }
-            
-            
-            ctx.scene.leave()
         });
         promo.on("message", (ctx) => {
             ctx.reply("Вы не выбрали населенный пункт");
             ctx.scene.reenter()
         });
-        promo.action('back', ctx => {
-            ctx.scene.leave()
-            ctx.scene.enter('startPromo')
-        })
+        
         return promo;
     }
 
