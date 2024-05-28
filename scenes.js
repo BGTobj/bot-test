@@ -838,12 +838,11 @@ class SceneGenerator {
                 }
             }
             if (arResImportant.length > 0) {
-                await ctx.reply(arResImportant.join(''), {parse_mode: 'HTML', reply_markup: Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]).reply_markup});
+                await ctx.reply(arResImportant.join(''), {parse_mode: 'HTML', reply_markup: backMainMenu.reply_markup});
             } else {
-                ctx.reply(`В выбранном городе сейчас нет важных сообщений 😔`, Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]))
+                ctx.reply(`В выбранном городе сейчас нет важных сообщений 😔`, backMainMenu)
             }
             arCity.length = 0;
-            ctx.scene.leave()
         })
         
         getImportantMessage.on(message, ctx => {
