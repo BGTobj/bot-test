@@ -9,7 +9,7 @@ import { JWT } from 'google-auth-library'
 import sqlite3  from 'sqlite3'
 sqlite3.verbose();
 import Mail from './mail.js'
-const { SPREADSHEETID_PROD, CLIENT_EMAIL, EMAIL_HOST_USER, GROUP_URL } = process.env
+const { SPREADSHEETID_PROD, CLIENT_EMAIL, EMAIL_RECIEVER, GROUP_URL } = process.env
 const { privateKey } = JSON.parse(process.env.PRIVATE_KEY)
 const SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -729,7 +729,7 @@ class SceneGenerator {
         const postReview = new Scenes.BaseScene("postReview");
         postReview.action('Send', async (ctx) => {
             const data = `Адрес аптеки: ${adressDrugStore}\nПочта пользователя: ${userEmail}\nСообщение: ${userMessage}`
-            Mail.send(EMAIL_HOST_USER, data)
+            Mail.send(EMAIL_RECIEVER, data)
             ctx.reply(`Ваш вопрос передан в отдел контроля качества. Мы отвечаем в течение 2-х дней, но постараемся сделать это быстрее. Не забудьте проверить вашу почту и папку спам. Спасибо, что помогаете нам развиваться!`, Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]))
             ctx.scene.leave()
         })
