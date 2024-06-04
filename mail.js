@@ -33,7 +33,7 @@ class Mail {
             })
             return info.messageId
         } catch (e) {
-            console.error(e)
+            console.log(e)
         }
     }
 }
