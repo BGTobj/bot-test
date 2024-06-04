@@ -9,7 +9,7 @@ import { JWT } from 'google-auth-library'
 import sqlite3  from 'sqlite3'
 sqlite3.verbose();
 import Mail from './mail.js'
-const { SPREADSHEETID_PROD, CLIENT_EMAIL, EMAIL_RECIEVER, GROUP_URL } = process.env
+const { SPREADSHEETID_PROD, CLIENT_EMAIL, EMAIL_RECIEVER, GROUP_URL, CHAT_URL } = process.env
 const { privateKey } = JSON.parse(process.env.PRIVATE_KEY)
 const SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -348,7 +348,7 @@ class SceneGenerator {
         sendQuestion.enter( (ctx) => {
             ctx.reply(`Для связи с оператором, вы будете перенаправлены в отдельный чат. Наши сотрудники помогут вам и ответят на все вопросы\nДля продолжения нажмите <b>Перейти</b> 👇`, 
                     {parse_mode: 'HTML', reply_markup: Markup.inlineKeyboard(
-                    [[Markup.button.url('⚠️ Перейти', GROUP_URL)],
+                    [[Markup.button.url('⚠️ Перейти', CHAT_URL)],
                     [Markup.button.callback('🏠 В главное меню', 'mainMenu')],], 
                 ).reply_markup}
             )
