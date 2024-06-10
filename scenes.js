@@ -728,7 +728,9 @@ class SceneGenerator {
     postReviewScene() {
         const postReview = new Scenes.BaseScene("postReview");
         postReview.action('Send', async (ctx) => {
-            const data = `Адрес аптеки: ${adressDrugStore}\nПочта пользователя: ${userEmail}\nСообщение: ${userMessage}`
+            const data = `Адрес аптеки: ${adressDrugStore}<br />
+            Почта пользователя: ${userEmail}<br />
+            Сообщение: ${userMessage}`;
             Mail.send(EMAIL_RECIEVER, data)
             ctx.reply(`Ваш вопрос передан в отдел контроля качества. Мы отвечаем в течение 2-х дней, но постараемся сделать это быстрее. Не забудьте проверить вашу почту и папку спам. Спасибо, что помогаете нам развиваться!`, Markup.inlineKeyboard([Markup.button.callback('🏠 В главное меню', 'mainMenu')]))
             ctx.scene.leave()
