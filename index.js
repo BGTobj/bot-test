@@ -58,12 +58,7 @@ const stage = new Scenes.Stage([startPromo, promo, getPromoCity, getListPromoDru
         await ctx.reply(`Здравствуйте, ${userFirstName}, вы находитесь в телеграм-боте сети аптек "Монастырёв". Выберите, что вас интересует`, mainMenu)
     });
 
-    bot.telegram.setMyCommands([
-        {
-          command: 'start',
-          description: 'Запусить',
-        },
-    ]);
+
 
 
 //главное меню
